@@ -1,4 +1,4 @@
-package fr.dcram
+package fr.dcram.tokenizer
 
 import fr.dcram.nlp4s.Nlp4s
 import fr.dcram.nlp4s.tokenizer.Tokenizer

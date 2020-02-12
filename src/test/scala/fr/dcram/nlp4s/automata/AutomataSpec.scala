@@ -3,10 +3,11 @@ package fr.dcram.nlp4s.automata
 import org.scalatest.FunSpec
 
 class AutomataSpec extends FunSpec {
-  case class E(c:Char) extends Token
-  def sequence(string:String) = string.toCharArray.toSeq.map(E.apply)
 
-  val ScalA = sequence("ScalA")
+  case class E(c:Char)
+  def sequence(string:String):Seq[E] = string.toCharArray.toSeq.map(E.apply)
+
+  private val ScalA = sequence("ScalA")
 
   object Vowel extends TokenMatcher[E] {
     private[this] val values = "aeiouy".toCharArray.toSet
@@ -16,18 +17,22 @@ class AutomataSpec extends FunSpec {
     override def matches(tok: E): Boolean = !Vowel.matches(tok)
   }
 
-  val A1 = new AutomatonBuilder[E]()
+  val A1:Automaton[E] = new AutomatonBuilder[E]()
     .initial(1)
     .transition(1,2,Vowel)
-    .transition(2,3,Consomn, true)
+    .transition(2,3,Consomn, toStateAccepting = true)
     .build
 
+  def matchToString(m:Seq[Match[E]]):String = m.map(_.asInstanceOf[TokenMatch[E]].token.c.toString).mkString
   describe("matchesIn") {
     Seq(
       ((ScalA, A1), Some("al"))
     ).foreach{
-      case ((sequence, automaton), expected) =>
-        assert(seqMatch(sequence, automaton).map(_._2.map(_.c).mkString) == expected)
+      case ((sequence:Seq[E], automaton:Automaton[E]), expected) =>
+        it(s"should find $expected in ${sequence.map(_.c.toString).mkString}") {
+          val matches = automaton.seqMatch(sequence)
+          assert(matches.headOption.map(m => matchToString(m)) == expected)
+        }
     }
   }
 

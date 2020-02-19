@@ -4,13 +4,20 @@ import scala.annotation.tailrec
 
 package object automata {
 
-  trait TokenMatcher[Tok] {def matches(tok:Tok):Boolean}
+  trait Transitionable[Tok] {
+    def asTransition(target:State[Tok]):Transition[Tok]
+  }
+  trait TokenMatcher[Tok] extends Transitionable[Tok] {
+    def matches(tok:Tok):Boolean
+
+    override def asTransition(target: State[Tok]): Transition[Tok] = new MatcherTransition[Tok](this, target)
+  }
 
   abstract class Transition[Tok](val target:State[Tok])
   case class EpsilonTransition[Tok](override val target:State[Tok]) extends Transition[Tok](target)
-  case class AutomatonTransition[Tok](name:String, automaton:Automaton[Tok], override val target:State[Tok]) extends Transition[Tok](target)
+  case class AutomatonTransition[Tok](name:Option[String], automaton:Automaton[Tok], override val target:State[Tok]) extends Transition[Tok](target)
   case class MatcherTransition[Tok](matcher:TokenMatcher[Tok], override val target:State[Tok]) extends Transition[Tok](target)
-  case class State[Tok](transitions:Seq[Transition[Tok]], accepting:Boolean)
+  case class State[Tok](transitions:Seq[Transition[Tok]], accepting:Boolean = false)
   case class StateInstance[Tok](state:State[Tok], rest:Seq[Transition[Tok]])
   case class AutomatonInstance[Tok](current: StateInstance[Tok], stack:List[(StateInstance[Tok], Match[Tok])], seq:Seq[Tok])
   abstract class Match[Tok]
@@ -68,7 +75,12 @@ package object automata {
   }
 
 
-  case class Automaton[Tok](initialState:State[Tok]) {
+  object Automaton {
+    def empty[Tok]:Automaton[Tok] = Automaton[Tok](State(transitions = List.empty, accepting = true))
+  }
+
+  case class Automaton[Tok](initialState:State[Tok]) extends Transitionable[Tok] {
+    override def asTransition(target: State[Tok]): Transition[Tok] = new AutomatonTransition[Tok](None, this, target)
     def seqMatch(sequence: Seq[Tok]): Seq[Seq[Match[Tok]]] = {
       prefixMatch(sequence) match {
         case None if sequence.isEmpty => Seq.empty

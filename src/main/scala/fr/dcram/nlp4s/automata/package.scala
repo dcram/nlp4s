@@ -1,21 +1,75 @@
 package fr.dcram.nlp4s
 
+import scala.annotation.tailrec
+
 package object automata {
 
+  trait TokenMatcher[Tok] {def matches(tok:Tok):Boolean}
 
   abstract class Transition[Tok](val target:State[Tok])
   case class EpsilonTransition[Tok](override val target:State[Tok]) extends Transition[Tok](target)
   case class AutomatonTransition[Tok](name:String, automaton:Automaton[Tok], override val target:State[Tok]) extends Transition[Tok](target)
   case class MatcherTransition[Tok](matcher:TokenMatcher[Tok], override val target:State[Tok]) extends Transition[Tok](target)
+  case class State[Tok](transitions:Seq[Transition[Tok]], accepting:Boolean)
+  case class StateInstance[Tok](state:State[Tok], rest:Seq[Transition[Tok]])
+  case class AutomatonInstance[Tok](current: StateInstance[Tok], stack:List[(StateInstance[Tok], Match[Tok])], seq:Seq[Tok])
+  abstract class Match[Tok]
+  case class EpsilonMatch[Tok](transition:EpsilonTransition[Tok]) extends Match[Tok]
+  case class TokenMatch[Tok](token:Tok, transition:MatcherTransition[Tok]) extends Match[Tok]
+  case class AutomatonMatch[Tok](name:String, matches:List[Match[Tok]]) extends Match[Tok]
 
-  trait TokenMatcher[Tok] {
-    def matches(tok:Tok):Boolean
+  private[this] def backtrack[Tok](i:AutomatonInstance[Tok]):Option[AutomatonInstance[Tok]] = i match {
+    case AutomatonInstance(_, Nil, _) => None
+    case AutomatonInstance(_, (si, EpsilonMatch(_)) :: stack, seq) => Some(AutomatonInstance(si, stack, seq))
+    case AutomatonInstance(_, (si, TokenMatch(tok, _)) :: stack, seq) => Some(AutomatonInstance(si, stack, tok +: seq))
   }
 
-  case class State[Tok](id:Int, transitions:Seq[Transition[Tok]], accepting:Boolean)
+  /*
+  The reactor method of automaton instance matching
+   */
+  @tailrec
+  private[this] def nextPrefixMatch[Tok](i:AutomatonInstance[Tok]):Option[AutomatonInstance[Tok]] = {
+    i match {
+      case AutomatonInstance(StateInstance(currentState, _), _, Nil) if currentState.accepting =>
+        Some(i)
+      case AutomatonInstance(StateInstance(_, _), _, Nil)  =>
+        backtrack(i) match {
+          case Some(bi) => nextPrefixMatch[Tok](bi)
+          case None => None
+        }
+      case AutomatonInstance(StateInstance(currentState, Nil), _, _) if currentState.accepting =>
+        Some(i)
+      case AutomatonInstance(StateInstance(_, Nil), _, _) =>
+        backtrack(i) match {
+          case Some(bi) => nextPrefixMatch[Tok](bi)
+          case None => None
+        }
+      case AutomatonInstance(StateInstance(currentState, EpsilonTransition(target) +: restTransitions), stack, s) =>
+        nextPrefixMatch(AutomatonInstance(
+          StateInstance(target, target.transitions),
+          (StateInstance(currentState, restTransitions), EpsilonMatch(EpsilonTransition(target))) :: stack,
+          s
+        ))
+      case AutomatonInstance(StateInstance(currentState, MatcherTransition(matcher, target) +: restTransitions), stack, tok +: restSeq) if matcher.matches(tok) =>
+        nextPrefixMatch(AutomatonInstance(
+          StateInstance(target, target.transitions),
+          (StateInstance(currentState, restTransitions), TokenMatch(tok, MatcherTransition(matcher, target))) :: stack,
+          restSeq
+        ))
+      case AutomatonInstance(StateInstance(currentState, _ +: restTransitions), stack, seq) =>
+        nextPrefixMatch(AutomatonInstance(
+          StateInstance(currentState, restTransitions),
+          stack,
+          seq
+        ))
+      case AutomatonInstance(StateInstance(_, head :: _), _, _) =>
+        throw new UnsupportedOperationException(s"Not yet implemented: ${head.getClass.getSimpleName}")
+    }
+  }
+
 
   case class Automaton[Tok](initialState:State[Tok]) {
-    def seqMatch(sequence:Seq[Tok]):Seq[Seq[Match[Tok]]] = {
+    def seqMatch(sequence: Seq[Tok]): Seq[Seq[Match[Tok]]] = {
       prefixMatch(sequence) match {
         case None if sequence.isEmpty => Seq.empty
         case None => seqMatch(sequence.tail)
@@ -23,69 +77,32 @@ package object automata {
       }
     }
 
+    private[this] def makeInitialInstance(sequence: Seq[Tok]):AutomatonInstance[Tok] = {
+      AutomatonInstance(StateInstance(this.initialState, this.initialState.transitions), List.empty, sequence)
+    }
+
+    @tailrec
+    private[this] def collectPrefixMatches(iOpt: Option[AutomatonInstance[Tok]], matches:List[Seq[Match[Tok]]]):Seq[Seq[Match[Tok]]] = iOpt match {
+      case Some(i) =>
+        nextPrefixMatch(i) match {
+          case Some(next) => collectPrefixMatches(backtrack(next), next.stack.map(_._2).reverse :: matches)
+          case None =>
+            matches.reverse
+        }
+      case None => matches.reverse
+    }
+
+    def allPrefixMatches(sequence: Seq[Tok]):Seq[Seq[Match[Tok]]] = {
+      collectPrefixMatches(Some(makeInitialInstance(sequence)), List.empty)
+    }
+
     /*
     Tries to match the automaton strictly at the beginning of the sequence.
      */
-    private[this] def prefixMatch(sequence:Seq[Tok]):Option[(Seq[Match[Tok]], Seq[Tok])] = {
-      prefixRecursiveMatch(sequence, this.initialState, this.initialState.transitions, Seq.empty)
-    }
-
-
-    private[this] def prefixRecursiveMatch(sequence:Seq[Tok], current:State[Tok], transitions:Seq[Transition[Tok]], matches:Seq[Match[Tok]]): Option[(Seq[Match[Tok]], Seq[Tok])] = {
-      (sequence, current.accepting, transitions) match {
-        case (Nil, false, _) =>
-          None
-        case (Nil, true, _) =>
-          Some((matches, Nil))
-        case (_, false, Nil) =>
-          None
-        case (s, true, Nil) =>
-          Some((matches, s))
-        case (s, _, EpsilonTransition(target) +: restTransitions) =>
-          prefixRecursiveMatch(s, target, target.transitions, matches).orElse(
-            prefixRecursiveMatch(s, current, restTransitions, matches)
-          )
-        case (s@tok +: tail, _, MatcherTransition(matcher, target) +: restTransitions) if matcher.matches(tok) =>
-          prefixRecursiveMatch(tail, target, target.transitions, matches :+ TokenMatch(tok) ).orElse(
-            prefixRecursiveMatch(s, current, restTransitions, matches)
-          )
-        case (s, _, MatcherTransition(_, _) +: restTransitions) =>
-            prefixRecursiveMatch(s, current, restTransitions, matches)
-        case (s, _, head +: _) =>
-          throw new UnsupportedOperationException(s"Not yet implemented: ${head.getClass.getSimpleName}")
-      }
-
+    private[this] def prefixMatch(sequence: Seq[Tok]): Option[(Seq[Match[Tok]], Seq[Tok])] = {
+      nextPrefixMatch(makeInitialInstance(sequence))
+        .map(i => (i.stack.map(_._2).reverse, i.seq))
     }
   }
-  abstract class Match[Tok]
-  case class TokenMatch[Tok](token:Tok) extends Match[Tok]
-  case class AutomatonMatch[Tok](name:String, matches:Seq[Match[Tok]]) extends Match[Tok]
-
-
-/*
-  trait PostfixAutomatonBuilder extends Automaton {
-    type E <: Automaton
-    type T = E
-    def builder: AutomatonBuilder
-
-    def |(a: Automaton):Automaton = builder.|(this, a)
-    def ?():Automaton = builder.?(this)
-    def +():Automaton = builder.+(this)
-    def *():Automaton = builder.*(this)
-    def ~(n:Int):Automaton = builder.~(this, n)
-    def ~(m:Int, n:Int):Automaton = builder.~(this, m, n)
-
-  }
-
-  trait AutomatonBuilder {
-    type T <: Automaton
-    def |(a1: T, a2: T):T
-    def ?(a:T):T
-    def +(a:T):T
-    def *(a:T):T
-    def ~(a:T, n:Int):T
-    def ~(a:T, m:Int, n:Int):T
-  }
-*/
 
 }

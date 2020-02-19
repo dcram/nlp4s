@@ -8,7 +8,7 @@ class AutomatonBuilder[Tok]() {
   private[this] val states = new mutable.HashMap[Int, State[Tok]]()
   private[this] def state(id:Int, accepting:Boolean=false):State[Tok] = {
     if(!states.contains(id))
-      states.put(id, State[Tok](id, new mutable.ArrayBuffer[Transition[Tok]](), accepting))
+      states.put(id, State[Tok](new mutable.ArrayBuffer[Transition[Tok]](), accepting))
     states(id)
   }
   def initial(id:Int):AutomatonBuilder[Tok] = {

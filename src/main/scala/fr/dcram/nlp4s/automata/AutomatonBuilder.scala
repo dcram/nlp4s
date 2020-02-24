@@ -19,7 +19,7 @@ class AutomatonBuilder[Tok]() {
     this
   }
   def matcherTransition(fromState: Int, toState:Int, matcher:TokenMatcher[Tok]):AutomatonBuilder[Tok] = {
-    val transition = new MatcherTransition[Tok](matcher, getState(toState))
+    val transition = new MatcherTransit[Tok](matcher, getState(toState))
     getState(fromState).transitions.asInstanceOf[mutable.ArrayBuffer[Transition[Tok]]].append(transition)
     this
   }
@@ -28,7 +28,7 @@ class AutomatonBuilder[Tok]() {
     this
   }
   def epsilon(fromState: Int, toState:Int):AutomatonBuilder[Tok] = {
-    getState(fromState).transitions.asInstanceOf[mutable.ArrayBuffer[Transition[Tok]]].append(EpsilonTransition(getState(toState)))
+    getState(fromState).transitions.asInstanceOf[mutable.ArrayBuffer[Transition[Tok]]].append(EpsilonTransit(getState(toState)))
     this
   }
   def build:Automaton[Tok]  = {

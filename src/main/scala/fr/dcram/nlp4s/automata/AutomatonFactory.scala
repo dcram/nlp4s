@@ -31,7 +31,7 @@ object AutomatonFactory {
 
   def zeroOne[Tok](t:Transitionable[Tok]):Automaton[Tok] = {
     val target = newAcceptingState[Tok]
-    Automaton(State(transitions = Seq(t.asTransition(target), EpsilonTransition(target))))
+    Automaton(State(transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
   }
 
   def star[Tok](t:Transitionable[Tok]):Automaton[Tok] = {

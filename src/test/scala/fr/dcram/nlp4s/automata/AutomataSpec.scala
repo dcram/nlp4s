@@ -1,6 +1,6 @@
 package fr.dcram.nlp4s.automata
 
-import org.scalatest.{FunSpec, Ignore}
+import org.scalatest.FunSpec
 
 class AutomataSpec extends FunSpec {
 
@@ -30,15 +30,15 @@ class AutomataSpec extends FunSpec {
     .matcherTransition(3,4,Consomn)
     .build
 
-  import Quantifiers._
   import AutomatonFactory._
+  import Quantifiers._
 
   val A3:Automaton[E] = AutomatonFactory.sequence(Seq(
     Vowel,
     quantified(Consomn, Plus)
   ))
 
-  def matchToString(m:Seq[Match[E]]):String = m.map(_.asInstanceOf[TokenMatch[E]].token.c.toString).mkString
+  def matchToString(m:AutInst[E]):String = RegexMatch(m).tokens.map(_.c).mkString
   describe("matchesIn") {
     Seq(
       (("ScalA", A1), Some("al"))
@@ -53,15 +53,15 @@ class AutomataSpec extends FunSpec {
   }
   describe("allPrefixMatches") {
     Seq(
-//      (("ScalA", A1), Seq.empty),
-//      (("alSca", A1), Seq("al")),
-//      (("ScalA", A2), Seq.empty),
-//      (("alSca", A2), Seq("alS", "al")),
+      (("ScalA", A1), Seq.empty),
+      (("alSca", A1), Seq("al")),
+      (("ScalA", A2), Seq.empty),
+      (("alSca", A2), Seq("alS", "al")),
       (("acccab", A3), Seq("accc", "acc", "ac")),
-    ).foreach{
-      case ((string, automaton:Automaton[E]), expected) =>
+    ).zipWithIndex.foreach{
+      case (((string, automaton:Automaton[E]), expected), i) =>
         val seq = sequence(string)
-        it(s"should find $expected in $string with automaton $automaton") {
+        it(s"$i. should find $expected in $string with automaton $automaton") {
           val matches = automaton.allPrefixMatches(seq)
           assert(matches.map(m => matchToString(m)) == expected)
         }

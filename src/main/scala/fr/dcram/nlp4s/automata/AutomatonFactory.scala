@@ -15,7 +15,7 @@ object AutomatonFactory {
 
   private def newAcceptingState[Tok]:State[Tok] = State[Tok](List.empty, accepting = true)
 
-  def named[Tok](name:String, a:Automaton[Tok]):Automaton[Tok] = Automaton(State(transitions = Seq(AutomatonTransition(Some(name), a, newAcceptingState))))
+  def named[Tok](name:String, a:Automaton[Tok]):Automaton[Tok] = Automaton(State(transitions = Seq(AutTransit(Some(name), a, newAcceptingState))))
 
   def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifiers.Quantifier):Automaton[Tok] = quantifier match {
     case Quantifiers.ZeroOne => zeroOne(t)
@@ -42,7 +42,7 @@ object AutomatonFactory {
   }
 
   private[this] def append[Tok](a1: Automaton[Tok], a2:Automaton[Tok]):Automaton[Tok] = Automaton(
-    State(transitions = Seq(AutomatonTransition(None, a1,State(transitions = Seq(AutomatonTransition(None, a2,newAcceptingState))))))
+    State(transitions = Seq(AutTransit(None, a1,State(transitions = Seq(AutTransit(None, a2,newAcceptingState))))))
   )
   private[this] def doSequence[Tok](list: Seq[Automaton[Tok]]):Automaton[Tok] = list match {
     case Nil => Automaton.empty[Tok]

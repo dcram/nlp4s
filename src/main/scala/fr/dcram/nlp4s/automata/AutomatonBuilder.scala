@@ -27,6 +27,10 @@ class AutomatonBuilder[Tok]() {
     getState(fromState).transitions.asInstanceOf[mutable.ListBuffer[Transition[Tok]]].append(t.asTransition(getState(toState)))
     this
   }
+  def namedTransition(name:String, fromState: Int, toState:Int, t:Automaton[Tok]):AutomatonBuilder[Tok] = {
+    getState(fromState).transitions.asInstanceOf[mutable.ListBuffer[Transition[Tok]]].append(t.asNamedTransition(name, getState(toState)))
+    this
+  }
   def epsilon(fromState: Int, toState:Int):AutomatonBuilder[Tok] = {
     getState(fromState).transitions.asInstanceOf[mutable.ListBuffer[Transition[Tok]]].append(EpsilonTransit(getState(toState)))
     this

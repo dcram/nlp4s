@@ -16,7 +16,9 @@ object AutomatonFactory {
 
   private def newAcceptingState[Tok]:State[Tok] = State[Tok](List.empty, accepting = true)
 
-  def named[Tok](name:String, a:Automaton[Tok]):Automaton[Tok] = Automaton(State(transitions = Seq(AutTransit(Some(name), a, newAcceptingState))))
+  def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = new Transitionable[Tok] {
+    override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
+  }
 
   def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Automaton[Tok] = quantifier match {
     case ZeroOne => zeroOne(t)
@@ -37,6 +39,7 @@ object AutomatonFactory {
     val target = newAcceptingState[Tok]
     Automaton(State(transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
   }
+  def oneN[Tok](t:Transitionable[Tok]):Automaton[Tok] = quantified(t, Plus)
 
   def star[Tok](t:Transitionable[Tok]):Automaton[Tok] = {
     new AutomatonBuilder().initialState(1).state(2, accepting = true)

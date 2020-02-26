@@ -3,7 +3,7 @@ package fr.dcram.nlp4s.automata
 object AutomataTests {
   case class E(c:Char)
   def fixSeq(string:String):Seq[E] = string.toCharArray.toSeq.map(E.apply)
-  def matchToString(m:RegexMatch[E]):String = m.tokens.collect{case UserToken(E(c)) => c}.mkString
+  def matchToString(m:RegexMatch[E]):String = m.tokens.map(_.c).mkString
 
   object Vowel extends UserTokenMatcher[E] {
     private[this] val values = "aeiouy".toCharArray.toSet
@@ -99,6 +99,17 @@ object AutomataTests {
     .epsilon(2,3)
     .transition(3,4,Vowel)
     .build
+
+  // a(?<toto>(?<tata>bV?c)+d)
+  import AutomatonFactory._
+  val A7:Automaton[E] = sequence(
+    Letter('a'),
+    named(
+      "toto",
+      oneN(named("tata", Letter('b'), zeroOne(Vowel), Letter('c'))),
+      Letter('d')
+    )
+  )
 
 
 }

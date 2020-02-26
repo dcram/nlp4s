@@ -8,7 +8,7 @@ class AutomatonFactorySpec extends FunSpec {
 
   describe(AutomatonFactory.toString) {
     def testMatching(index:Int, seqString:String, aut:Automaton[E], matches: Seq[String]):Unit = it(s"$index. should extract matches $matches when matching $aut on sequence $seqString") {
-      assert(seqMatch(aut, fixSeq(seqString)).map(_.tokens.collect{case UserToken(E(c)) => c}.mkString) == matches)
+      assert(seqMatch(aut, fixSeq(seqString)).map(_.tokens.map(_.c).mkString) == matches)
     }
 
     def testAll(tests:(String, Automaton[E], Seq[String])*):Unit = {

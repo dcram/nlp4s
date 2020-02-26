@@ -26,7 +26,7 @@ package object automata {
   abstract class Transition[Tok](val target:State[Tok]) {
     def instantiate:TransitInst[Tok]
   }
-  abstract class TransitInst[Tok](transit:Transition[Tok]) {
+  abstract class TransitInst[Tok](val transit:Transition[Tok]) {
     def targetStateInstance:StateInst[Tok] = StateInst(transit.target)
     def _match(s:Seq[Token[Tok]]):Option[(Match[Tok], Seq[Token[Tok]])]
   }
@@ -103,6 +103,23 @@ package object automata {
     override def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] = ti.autInst.rollback(s)
   }
 
+  case class StateInst[Tok](state:State[Tok],accepting:Boolean, rest:List[TransitInst[Tok]])  {
+    override def toString: String = s"StateInst($accepting,${rest.map(_.toString).mkString("|")})"
+    def reset:StateInst[Tok] = StateInst(state)
+  }
+
+
+  object StateInst {
+    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions.map(_.instantiate).toList)
+    def apply[Tok](accepting:Boolean, state:State[Tok], rest:List[TransitInst[Tok]]):StateInst[Tok] = new StateInst( state, accepting,rest)
+  }
+
+  object AutInst{
+    def apply[Tok](automaton:Automaton[Tok]):AutInst[Tok] = new AutInst[Tok](StateInst[Tok](automaton.initialState),List.empty)
+    def apply[Tok](current: StateInst[Tok], matchStack:List[(StateInst[Tok], Match[Tok])]):AutInst[Tok] = new AutInst(current,matchStack)
+  }
+
+
   //instance model
   case class AutInst[Tok](current: StateInst[Tok], matchStack:List[(StateInst[Tok], Match[Tok])]) {
 
@@ -128,6 +145,16 @@ package object automata {
       s"[${toString(matchStack)}]${if (current.accepting) "✓" else "…"}"
     }
 
+    def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] =  {
+      @tailrec
+      def doRollback(s:Seq[Token[Tok]], ms:List[(StateInst[Tok], Match[Tok])]):Seq[Token[Tok]] = ms match {
+        case (_, m) :: rest => doRollback(m.rollback(s), rest)
+        case Nil => s
+      }
+      doRollback(s, matchStack)
+    }
+
+
     def backtrack(s: Seq[Token[Tok]]): Option[(Seq[Token[Tok]], AutInst[Tok])] =  {
       matchStack match {
         case (si, EpsilonMatch(_)) :: rest =>
@@ -135,11 +162,14 @@ package object automata {
         case (si, TokenMatch(tok, _)) :: rest =>
           Some((tok +: s, AutInst(si, rest)))
         case (si, AutMatch(ti)) :: mRest =>
+
           ti.autInst.backtrack(s) match {
           case Some((bs, bi)) =>
             nextPrefixMatch(bs, bi) match {
                 case Some((s2, i2)) =>
-                  val bi2 = AutInst(current, (si, AutMatch(ti.copy(autInst = i2))) :: mRest)
+                  val bi2 = AutInst(
+                    current.reset,
+                    (si, AutMatch(ti.copy(autInst = i2))) :: mRest)
                   Some((s2, bi2))
                 case None =>
                   val s2 = bi.rollback(bs)
@@ -155,26 +185,6 @@ package object automata {
       }
     }
 
-    def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] =  {
-      @tailrec
-      def doRollback(s:Seq[Token[Tok]], ms:List[(StateInst[Tok], Match[Tok])]):Seq[Token[Tok]] = ms match {
-        case (_, m) :: rest => doRollback(m.rollback(s), rest)
-        case Nil => s
-      }
-      doRollback(s, matchStack)
-    }
-  }
-  case class StateInst[Tok](accepting:Boolean, rest:List[TransitInst[Tok]])  {
-    override def toString: String = s"StateInst($accepting,${rest.map(_.toString).mkString("|")})"}
-
-  object StateInst {
-    def apply[Tok](state:State[Tok]) = new StateInst(state.accepting, state.transitions.map(_.instantiate).toList)
-    def apply[Tok](accepting:Boolean, rest:List[TransitInst[Tok]]) = new StateInst(accepting, rest)
-  }
-
-  object AutInst{
-    def apply[Tok](automaton:Automaton[Tok]):AutInst[Tok] = new AutInst[Tok](StateInst[Tok](automaton.initialState),List.empty)
-    def apply[Tok](current: StateInst[Tok], matchStack:List[(StateInst[Tok], Match[Tok])]):AutInst[Tok] = new AutInst(current,matchStack)
   }
 
   /*
@@ -192,22 +202,22 @@ package object automata {
           case None =>
             None
         }
-      case (_, AutInst(StateInst(accepting, Nil), _)) if accepting =>
+      case (_, AutInst(StateInst(state, accepting, Nil), _)) if accepting =>
         Some((s, i))
-      case (s, AutInst(StateInst(_, Nil), _)) =>
+      case (s, AutInst(StateInst(state, _, Nil), _)) =>
         i.backtrack(s) match {
           case Some((bs, bi)) =>
             nextPrefixMatch[Tok](bs,bi)
           case None =>
             None
         }
-      case (s, AutInst(StateInst(accepting, t :: rTransit), matchStack)) =>
-        val nextCur = StateInst(accepting, rTransit)
+      case (s, AutInst(StateInst(state, accepting, t :: rTransit), matchStack)) =>
         t._match(s) match {
           case Some((m, rSeq)) =>
-            nextPrefixMatch(rSeq, AutInst(t.targetStateInstance, (nextCur, m) :: matchStack))
+            val targetSi = StateInst(t.transit.target, accepting, rTransit)
+            nextPrefixMatch(rSeq, AutInst(t.targetStateInstance, (targetSi, m) :: matchStack))
           case None =>
-            nextPrefixMatch(s, AutInst(nextCur, matchStack))
+            nextPrefixMatch(s, AutInst(StateInst(state, accepting, rTransit), matchStack))
         }
     }
   }
@@ -262,35 +272,4 @@ package object automata {
   }
 
 
-  case class RegexMatch[Tok](tokens:Seq[Token[Tok]], groups:Map[String, Seq[Seq[Token[Tok]]]])
-
-  object RegexMatch {
-    def apply[Tok](i:AutInst[Tok]):RegexMatch[Tok] = {
-      def merge[K, V](m1:Map[K, Seq[V]], m2:Map[K, Seq[V]]):Map[K, Seq[V]] =
-        (m1.keySet ++ m2.keySet).map { i => i -> (m1.getOrElse(i, Seq.empty) ++ m2.getOrElse(i, Seq.empty)) }.toMap
-
-      def collect(matchStack:List[(StateInst[Tok], Match[Tok])], tokens:List[Token[Tok]], groups:Map[String, Seq[Seq[Token[Tok]]]]):(List[Token[Tok]], Map[String, Seq[Seq[Token[Tok]]]]) = {
-        matchStack match {
-          case (_, EpsilonMatch(_)) :: rest =>
-            collect(rest, tokens, groups)
-          case (_, TokenMatch(tok, _)) :: rest =>
-            collect(rest, tok :: tokens, groups)
-          case (_, AutMatch(ti)) :: rest =>
-            val (subTokens, subGroups) = collect(ti.autInst.matchStack, List.empty, Map.empty)
-            ti.autTransit.name match {
-              case Some(name) =>
-                collect(rest, subTokens ::: tokens, merge(merge(groups, subGroups), Map(name -> Seq(subTokens))))
-              case None =>
-                collect(rest, subTokens ::: tokens , merge(groups, subGroups))
-            }
-          case Nil =>
-            (tokens, groups)
-          case h :: _ =>
-            throw new IllegalStateException(s"Unexpected element: $h")
-        }
-      }
-      val (tokens, groups) = collect(i.matchStack, List.empty, Map.empty)
-      new RegexMatch(tokens, groups)
-    }
-  }
 }

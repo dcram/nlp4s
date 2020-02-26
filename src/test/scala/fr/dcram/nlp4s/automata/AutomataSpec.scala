@@ -21,7 +21,7 @@ class AutomataSpec extends FunSpec {
 
   describe("seqMatch") {
     def doTest(s:String, aut:Automaton[E], matches:Seq[String]):Unit = it(s"should extract matches $matches when matching $aut on sequence $s") {
-      assert(seqMatch(aut, fixSeq(s)).map(_.tokens.collect{case UserToken(E(c)) => c}.mkString) == matches)
+      assert(seqMatch(aut, fixSeq(s)).map(_.tokens.map(_.c).mkString) == matches)
     }
     describe("termination") {
       Seq(
@@ -57,8 +57,8 @@ class AutomataSpec extends FunSpec {
       ).zipWithIndex.foreach{
         case (((string, automaton:Automaton[E]), expected), i) =>
           val seq = fixSeq(string)
-          val matches = allPrefixMatches(automaton, seq)
           it(s"${1+i}. should find $expected in $string with automaton $automaton") {
+            val matches = allPrefixMatches(automaton, seq)
             val actual = matches.map(m => matchToString(m))
             assert(actual == expected)
           }
@@ -66,21 +66,56 @@ class AutomataSpec extends FunSpec {
     }
 
     describe("with capturing group") {
+      import AutomatonFactory._
       Seq(
-        (("aecobc", A6), Seq(("aeco", Map("toto" -> List("ec"))), ("ae", Map.empty))),
+        (
+          "aecobc",
+          A6,
+          Seq(
+            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
+            ("ae", Map.empty))),
+        (
+          "aa",
+          sequence(star(Letter('a')), Letter('a')),
+          Seq(
+            ("aa", Map.empty))),
+        (
+          "aa",
+          sequence(named("as", star(Letter('a'))), Letter('a')),
+          Seq(
+            ("aa", Map("as" -> Seq(("a", Map.empty)))))),
+        (
+          "abacbcdy",
+          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
+          Seq(
+            ("abac", Map("toto" -> Seq(("bac", Map.empty)))))),
+        (
+          "abacbcdy",
+          A7,
+          Seq(
+            ("abacbcd", Map("toto" -> ("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty)))))))),
       ).zipWithIndex.foreach{
-        case (((string, automaton:Automaton[E]), expList), i) =>
+        case ((string, automaton:Automaton[E], expMatches), i) =>
           val seq = fixSeq(string)
-          val matches = allPrefixMatches(automaton, seq)
-          it(s"${1+i}. should find ${expList.map(_._1)} in $string with automaton $automaton") {
-            val actual = matches.map(m => matchToString(m))
-            val expTokens = expList.map(_._1)
+          println(s"- ${string} ------------------")
+
+          val actualMatches = allPrefixMatches(automaton, seq)
+
+          def toStr(m:RegexMatch[E]):(String, Map[String, Any]) = (
+            matchToString(m),
+            m.groups.map{case (name, gm) => (name, gm.map(mm => toStr(mm)))}
+          )
+          val actualMatchesStr = actualMatches.map(toStr)
+
+          it(s"${1+i}. should find ${expMatches.map(_._1)} in $string with automaton $automaton", fr.dcram.InProgress) {
+            val actual = actualMatches.map(m => matchToString(m))
+            val expTokens = expMatches.map(_._1)
             assert(actual == expTokens)
           }
-          expList.zip(matches).zipWithIndex.foreach{
-            case (((tokens, groups), m), j) =>
-              it(s"${i+1}.${j+1}. should match $tokens with capturing groups $groups") {
-                assert(m.groups.map{case (name,list) => (name, list.map(_.collect{case UserToken(E(c)) => c}.mkString))} == groups)
+          actualMatchesStr.zip(expMatches).foreach {
+            case (actual, expected) =>
+              it(s"${1+i}. Match ${actual} should eq ${expected}") {
+                assert(actual == expected)
               }
           }
       }

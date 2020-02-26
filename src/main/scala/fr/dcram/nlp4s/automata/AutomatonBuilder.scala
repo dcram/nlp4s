@@ -15,7 +15,7 @@ class AutomatonBuilder[Tok]() {
   }
   def state(id:Int, accepting:Boolean = false):AutomatonBuilder[Tok] = {
     require(!states.contains(id), s"State $id already defined")
-    states.put(id, State[Tok](new mutable.ListBuffer[Transition[Tok]](), accepting))
+    states.put(id, State[Tok](id, new mutable.ListBuffer[Transition[Tok]](), accepting))
     this
   }
   def matcherTransition(fromState: Int, toState:Int, matcher:TokenMatcher[Tok]):AutomatonBuilder[Tok] = {
@@ -25,6 +25,10 @@ class AutomatonBuilder[Tok]() {
   }
   def transition(fromState: Int, toState:Int, t:Transitionable[Tok]):AutomatonBuilder[Tok] = {
     getState(fromState).transitions.asInstanceOf[mutable.ListBuffer[Transition[Tok]]].append(t.asTransition(getState(toState)))
+    this
+  }
+  def namedTransition(name:String, fromState: Int, toState:Int, t:Automaton[Tok]):AutomatonBuilder[Tok] = {
+    getState(fromState).transitions.asInstanceOf[mutable.ListBuffer[Transition[Tok]]].append(t.asNamedTransition(name, getState(toState)))
     this
   }
   def epsilon(fromState: Int, toState:Int):AutomatonBuilder[Tok] = {

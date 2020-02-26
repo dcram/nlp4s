@@ -1,71 +1,128 @@
 package fr.dcram.nlp4s.automata
 
+import fr.dcram.nlp4s.automata.AutomataTests.{AutVowCons, E, fixSeq}
 import org.scalatest.FunSpec
 
 class AutomataSpec extends FunSpec {
+  import AutomataTests._
 
-  case class E(c:Char)
-  def sequence(string:String):Seq[E] = string.toCharArray.toSeq.map(E.apply)
-
-  object Vowel extends TokenMatcher[E] {
-    private[this] val values = "aeiouy".toCharArray.toSet
-    override def matches(tok: E): Boolean =
-      values.contains(tok.c.toLower)
-  }
-  object Consomn extends TokenMatcher[E] {
-    override def matches(tok: E): Boolean =
-      !Vowel.matches(tok)
-  }
-
-  val A1:Automaton[E] = new AutomatonBuilder[E]()
-    .initialState(1).state(2).state(3, accepting = true)
-    .matcherTransition(1,2,Vowel)
-    .matcherTransition(2,3,Consomn)
-    .build
-
-  val A2:Automaton[E] = new AutomatonBuilder[E]()
-    .initialState(1).state(2).state(3, accepting = true).state(4, accepting = true)
-    .matcherTransition(1,2,Vowel)
-    .matcherTransition(2,3,Consomn)
-    .matcherTransition(3,4,Consomn)
-    .build
-
-  import AutomatonFactory._
-  import Quantifiers._
-
-  val A3:Automaton[E] = AutomatonFactory.sequence(Seq(
-    Vowel,
-    quantified(Consomn, Plus)
-  ))
-
-  def matchToString(m:AutInst[E]):String = RegexMatch(m).tokens.map(_.c).mkString
   describe("matchesIn") {
     Seq(
-      (("ScalA", A1), Some("al"))
+      (("ScalA", AutVowCons), Some("al"))
     ).foreach{
       case ((string, automaton:Automaton[E]), expected) =>
-        val seq = sequence(string)
-        ignore(s"should find $expected in $string") {
-          val matches = automaton.seqMatch(seq)
+        val seq = fixSeq(string)
+        it(s"should find $expected in $string") {
+          val matches = seqMatch(automaton, seq)
           assert(matches.headOption.map(m => matchToString(m)) == expected)
         }
     }
   }
-  describe("allPrefixMatches") {
-    Seq(
-      (("ScalA", A1), Seq.empty),
-      (("alSca", A1), Seq("al")),
-      (("ScalA", A2), Seq.empty),
-      (("alSca", A2), Seq("alS", "al")),
-      (("acccab", A3), Seq("accc", "acc", "ac")),
-    ).zipWithIndex.foreach{
-      case (((string, automaton:Automaton[E]), expected), i) =>
-        val seq = sequence(string)
-        it(s"$i. should find $expected in $string with automaton $automaton") {
-          val matches = automaton.allPrefixMatches(seq)
-          assert(matches.map(m => matchToString(m)) == expected)
-        }
+
+  describe("seqMatch") {
+    def doTest(s:String, aut:Automaton[E], matches:Seq[String]):Unit = it(s"should extract matches $matches when matching $aut on sequence $s") {
+      assert(seqMatch(aut, fixSeq(s)).map(_.tokens.map(_.c).mkString) == matches)
+    }
+    describe("termination") {
+      Seq(
+        ("", ZeroOneA, Seq("")),
+        ("aa", ZeroOneA, Seq("a", "a", "")),
+        ("b", ZeroOneA, Seq("", "")),
+      ).foreach {
+        case (s, aut, matches) => doTest(s, aut, matches)
+      }
+    }
+
+    describe("non overlapping") {
+      Seq(
+        ("aba", AutAConsA, Seq("aba")),
+        ("abacadafa", AutAConsA, Seq("aba", "ada")),
+      ).foreach {
+        case (s, aut, matches) => doTest(s, aut, matches)
+      }
     }
   }
 
+  describe("allPrefixMatches") {
+    describe("without capturing group") {
+
+      Seq(
+        (("ScalA", AutVowCons), Seq.empty),
+        (("alSca", AutVowCons), Seq("al")),
+        (("ScalA", AutVowConsCons), Seq.empty),
+        (("alSca", AutVowConsCons), Seq("alS", "al")),
+        (("acccab", AutVowConsPlus), Seq("accc", "acc", "ac")),
+        (("aecobc", A4), Seq("aeco")),
+        (("aecobc", A5), Seq("aeco", "ae")),
+      ).zipWithIndex.foreach{
+        case (((string, automaton:Automaton[E]), expected), i) =>
+          val seq = fixSeq(string)
+          it(s"${1+i}. should find $expected in $string with automaton $automaton") {
+            val matches = allPrefixMatches(automaton, seq)
+            val actual = matches.map(m => matchToString(m))
+            assert(actual == expected)
+          }
+      }
+    }
+
+    describe("with capturing group") {
+      import AutomatonFactory._
+      Seq(
+//        (
+//          "aecobc",
+//          A6,
+//          Seq(
+//            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
+//            ("ae", Map.empty))),
+//        (
+//          "aa",
+//          sequence(star(Letter('a')), Letter('a')),
+//          Seq(
+//            ("aa", Map.empty),
+//            ("a", Map.empty)),
+//        ),
+//        (
+//          "aa",
+//          sequence(named("as", star(Letter('a'))), Letter('a')),
+//          Seq(
+//            ("aa", Map("as" -> Seq(("a", Map.empty)))),
+//            ("a", Map("as" -> Seq(("", Map.empty)))),
+//          )),
+//        (
+//          "abacbcdy",
+//          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
+//          Seq(
+//            ("abac", Map("toto" -> Seq(("bac", Map.empty))))
+//          )),
+        (
+          "abacbcdy",
+          A7,
+          Seq(
+            ("abacbcd", Map("toto" -> ("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty)))))))),
+      ).zipWithIndex.foreach{
+        case ((string, automaton:Automaton[E], expMatches), i) =>
+          val seq = fixSeq(string)
+
+          val actualMatches = allPrefixMatches(automaton, seq)
+
+          def toStr(m:RegexMatch[E]):(String, Map[String, Any]) = (
+            matchToString(m),
+            m.groups.map{case (name, gm) => (name, gm.map(mm => toStr(mm)))}
+          )
+          val actualMatchesStr = actualMatches.map(toStr)
+
+          it(s"${1+i}. should find ${expMatches.map(_._1)} in $string with automaton $automaton", fr.dcram.InProgress) {
+            val actual = actualMatches.map(m => matchToString(m))
+            val expTokens = expMatches.map(_._1)
+            assert(actual == expTokens)
+          }
+          actualMatchesStr.zip(expMatches).foreach {
+            case (actual, expected) =>
+              it(s"${1+i}. Match ${actual} should eq ${expected}", fr.dcram.InProgress) {
+                assert(actual == expected)
+              }
+          }
+      }
+    }
+  }
 }

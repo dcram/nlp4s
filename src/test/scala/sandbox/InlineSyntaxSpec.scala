@@ -1,5 +1,6 @@
 package sandbox
 
+import fr.dcram.InProgress
 import org.scalatest.FunSpec
 
 class InlineSyntaxSpec extends FunSpec {
@@ -32,7 +33,7 @@ class InlineSyntaxSpec extends FunSpec {
       (9, A ~> B / C ~> D, "(((a) (b))|(c)) (d)"),
       (10, A / B ~> C / D, ""),
     ).foreach{
-      case (i, a, label) => it(s"$i. should labelize ${a.label} as $label"){assert(a.label == label)}
+      case (i, a, label) => it(s"$i. should labelize ${a.label} as $label", InProgress){assert(a.label == label)}
     }
   }
 }

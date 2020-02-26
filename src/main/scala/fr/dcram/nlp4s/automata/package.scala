@@ -215,19 +215,19 @@ package object automata {
 
 
   def seqMatch[Tok](a:Automaton[Tok], sequence: Seq[Tok]): Seq[RegexMatch[Tok]] = {
-    def doSeqMatch(a:Automaton[Tok], sequence: Seq[Token[Tok]]): Seq[RegexMatch[Tok]] = {
+    @tailrec
+    def doSeqMatch(a:Automaton[Tok], sequence: Seq[Token[Tok]], matches:List[RegexMatch[Tok]]): List[RegexMatch[Tok]] = {
       prefixSeqMatch(a, sequence) match {
         case None if sequence.isEmpty =>
-          Seq.empty
+          matches
         case None =>
-          doSeqMatch(a, sequence.tail)
+          doSeqMatch(a, sequence.tail, matches)
         case Some((restSeq, i)) =>
-          RegexMatch(i) +: doSeqMatch(a, if(i.tokLength == 0 && restSeq.nonEmpty) restSeq.tail else restSeq)
+          doSeqMatch(a, if(i.tokLength == 0 && restSeq.nonEmpty) restSeq.tail else restSeq, RegexMatch(i) :: matches)
       }
     }
 
-    doSeqMatch(a, tokenify(sequence))
-
+    doSeqMatch(a, tokenify(sequence), List.empty).reverse
   }
 
   private def tokenify[Tok](sequence: Seq[Tok]):Seq[Token[Tok]] = {

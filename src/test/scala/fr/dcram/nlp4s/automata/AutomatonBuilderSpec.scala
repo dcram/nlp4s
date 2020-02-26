@@ -43,7 +43,7 @@ class AutomatonBuilderSpec extends FunSpec {
     }
     describe("zeroOne") {
       Seq(
-        ("a", zeroOne(Letter('b')), Seq("")),
+        ("a", zeroOne(Letter('b')), Seq("", "")),
         ("b", zeroOne(Letter('b')), Seq("b", "")),
         ("bbb", zeroOne(Letter('b')), Seq("b", "b", "b", "")),
       ).foreach {

@@ -57,9 +57,12 @@ package object automata {
   // instance model
   case class EpsilonTransitInst[Tok](epsilonTransit:EpsilonTransit[Tok]) extends TransitInst[Tok](epsilonTransit) {
     override def _match(s: Seq[Token[Tok]]): Option[(Match[Tok], Seq[Token[Tok]])] = s match {
-      case SeqStart +: _ => None // does not matches sequence start
-      case SeqEnd +: _ => None // does not matches sequence end
-      case s => Some((EpsilonMatch(this), s))
+      case SeqStart +: _ =>
+        None // does not matches sequence start
+      case SeqEnd +: _ =>
+        Some((EpsilonMatch(this), s))
+      case s =>
+        Some((EpsilonMatch(this), s))
     }
   }
   case class MatcherTransitInst[Tok](matcherTransit: MatcherTransit[Tok]) extends TransitInst[Tok](matcherTransit) {
@@ -219,8 +222,7 @@ package object automata {
         case None =>
           doSeqMatch(a, sequence.tail)
         case Some((restSeq, i)) =>
-          RegexMatch(i) +: doSeqMatch(a, restSeq)
-//          RegexMatch(i) +: doSeqMatch(a, if(i.tokLength == 0 && restSeq.nonEmpty) restSeq.tail else restSeq)
+          RegexMatch(i) +: doSeqMatch(a, if(i.tokLength == 0 && restSeq.nonEmpty) restSeq.tail else restSeq)
       }
     }
 

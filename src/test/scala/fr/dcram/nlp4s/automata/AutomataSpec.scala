@@ -20,7 +20,7 @@ class AutomataSpec extends FunSpec {
   }
 
   describe("seqMatch") {
-    def doTest(s:String, aut:Automaton[E], matches:Seq[String]) = it(s"should extract matches $matches when matching $aut on sequence $s") {
+    def doTest(s:String, aut:Automaton[E], matches:Seq[String]):Unit = it(s"should extract matches $matches when matching $aut on sequence $s") {
       assert(seqMatch(aut, fixSeq(s)).map(_.tokens.collect{case UserToken(E(c)) => c}.mkString) == matches)
     }
     describe("termination") {
@@ -86,7 +86,4 @@ class AutomataSpec extends FunSpec {
       }
     }
   }
-
-
-
 }

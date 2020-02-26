@@ -15,7 +15,7 @@ class AutomatonBuilder[Tok]() {
   }
   def state(id:Int, accepting:Boolean = false):AutomatonBuilder[Tok] = {
     require(!states.contains(id), s"State $id already defined")
-    states.put(id, State[Tok](new mutable.ListBuffer[Transition[Tok]](), accepting))
+    states.put(id, State[Tok](id, new mutable.ListBuffer[Transition[Tok]](), accepting))
     this
   }
   def matcherTransition(fromState: Int, toState:Int, matcher:TokenMatcher[Tok]):AutomatonBuilder[Tok] = {

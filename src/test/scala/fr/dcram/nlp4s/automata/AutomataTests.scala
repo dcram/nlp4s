@@ -16,6 +16,7 @@ object AutomataTests {
   }
 
   case class Letter(letter:Char) extends UserTokenMatcher[E] {
+    override def toString: String = letter.toString
     override def matches(tok: E): Boolean =
       tok.c == letter
   }

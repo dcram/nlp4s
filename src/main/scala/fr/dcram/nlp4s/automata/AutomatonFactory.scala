@@ -1,20 +1,24 @@
 package fr.dcram.nlp4s.automata
 
+import java.util.concurrent.atomic.AtomicInteger
+
 object AutomatonFactory {
   import Quantifiers._
+
+  private val idGen = new AtomicInteger(0)
   def sequence[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
     val initState = transitionables.foldRight(newAcceptingState[Tok]){
-      case (t, target) => State(transitions = Seq(t.asTransition(target)))
+      case (t, target) => State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target)))
     }
     Automaton(initState)
   }
 
   def or[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
     val target = newAcceptingState[Tok]
-    Automaton(State(transitions = transitionables.map(_.asTransition(target))))
+    Automaton(State(idGen.incrementAndGet(), transitions = transitionables.map(_.asTransition(target))))
   }
 
-  private def newAcceptingState[Tok]:State[Tok] = State[Tok](List.empty, accepting = true)
+  private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), List.empty, accepting = true)
 
   def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = new Transitionable[Tok] {
     override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
@@ -37,7 +41,7 @@ object AutomatonFactory {
 
   def zeroOne[Tok](t:Transitionable[Tok]):Automaton[Tok] = {
     val target = newAcceptingState[Tok]
-    Automaton(State(transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
+    Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
   }
   def oneN[Tok](t:Transitionable[Tok]):Automaton[Tok] = quantified(t, Plus)
 

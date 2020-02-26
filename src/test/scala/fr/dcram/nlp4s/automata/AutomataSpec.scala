@@ -68,27 +68,32 @@ class AutomataSpec extends FunSpec {
     describe("with capturing group") {
       import AutomatonFactory._
       Seq(
-        (
-          "aecobc",
-          A6,
-          Seq(
-            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
-            ("ae", Map.empty))),
-        (
-          "aa",
-          sequence(star(Letter('a')), Letter('a')),
-          Seq(
-            ("aa", Map.empty))),
-        (
-          "aa",
-          sequence(named("as", star(Letter('a'))), Letter('a')),
-          Seq(
-            ("aa", Map("as" -> Seq(("a", Map.empty)))))),
-        (
-          "abacbcdy",
-          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
-          Seq(
-            ("abac", Map("toto" -> Seq(("bac", Map.empty)))))),
+//        (
+//          "aecobc",
+//          A6,
+//          Seq(
+//            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
+//            ("ae", Map.empty))),
+//        (
+//          "aa",
+//          sequence(star(Letter('a')), Letter('a')),
+//          Seq(
+//            ("aa", Map.empty),
+//            ("a", Map.empty)),
+//        ),
+//        (
+//          "aa",
+//          sequence(named("as", star(Letter('a'))), Letter('a')),
+//          Seq(
+//            ("aa", Map("as" -> Seq(("a", Map.empty)))),
+//            ("a", Map("as" -> Seq(("", Map.empty)))),
+//          )),
+//        (
+//          "abacbcdy",
+//          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
+//          Seq(
+//            ("abac", Map("toto" -> Seq(("bac", Map.empty))))
+//          )),
         (
           "abacbcdy",
           A7,
@@ -97,7 +102,6 @@ class AutomataSpec extends FunSpec {
       ).zipWithIndex.foreach{
         case ((string, automaton:Automaton[E], expMatches), i) =>
           val seq = fixSeq(string)
-          println(s"- ${string} ------------------")
 
           val actualMatches = allPrefixMatches(automaton, seq)
 
@@ -114,7 +118,7 @@ class AutomataSpec extends FunSpec {
           }
           actualMatchesStr.zip(expMatches).foreach {
             case (actual, expected) =>
-              it(s"${1+i}. Match ${actual} should eq ${expected}") {
+              it(s"${1+i}. Match ${actual} should eq ${expected}", fr.dcram.InProgress) {
                 assert(actual == expected)
               }
           }

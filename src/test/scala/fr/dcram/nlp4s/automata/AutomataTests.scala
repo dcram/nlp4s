@@ -6,6 +6,7 @@ object AutomataTests {
   def matchToString(m:RegexMatch[E]):String = m.tokens.map(_.c).mkString
 
   object Vowel extends UserTokenMatcher[E] {
+    override def toString: String = "V"
     private[this] val values = "aeiouy".toCharArray.toSet
     override def matches(tok: E): Boolean =
       values.contains(tok.c.toLower)

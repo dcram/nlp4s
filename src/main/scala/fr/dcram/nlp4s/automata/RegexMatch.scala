@@ -1,9 +1,12 @@
 package fr.dcram.nlp4s.automata
 
+import scala.annotation.tailrec
+
 case class RegexMatch[Tok](tokens:Seq[Tok], groups:Map[String, Seq[RegexMatch[Tok]]])
 
 object RegexMatch {
   def apply[Tok](i:AutInst[Tok]):RegexMatch[Tok] = {
+    @tailrec
     def collect(matchStack:List[(StateInst[Tok], Match[Tok])], tokens:Seq[Tok], groups:Map[String, Seq[RegexMatch[Tok]]]):(Seq[Tok], Map[String, Seq[RegexMatch[Tok]]]) = {
       matchStack match {
         case (_, EpsilonMatch(_)) :: rest =>
@@ -17,9 +20,9 @@ object RegexMatch {
           val subMatch = RegexMatch(ti.autInst)
           ti.autTransit.name match {
             case Some(name) =>
-              collect(rest, subMatch.tokens ++ tokens, groups + (name -> Seq(subMatch)))
+              collect(rest, subMatch.tokens ++ tokens, groups + (name -> (subMatch +: groups.getOrElse(name, Seq.empty))))
             case None =>
-              collect(rest, subMatch.tokens ++ tokens , groups)
+              collect(rest, subMatch.tokens ++ tokens , groups ++ subMatch.groups)
           }
         case Nil =>
           (tokens, groups)

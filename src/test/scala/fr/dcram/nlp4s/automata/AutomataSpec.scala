@@ -68,37 +68,37 @@ class AutomataSpec extends FunSpec {
     describe("with capturing group") {
       import AutomatonFactory._
       Seq(
-//        (
-//          "aecobc",
-//          A6,
-//          Seq(
-//            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
-//            ("ae", Map.empty))),
-//        (
-//          "aa",
-//          sequence(star(Letter('a')), Letter('a')),
-//          Seq(
-//            ("aa", Map.empty),
-//            ("a", Map.empty)),
-//        ),
-//        (
-//          "aa",
-//          sequence(named("as", star(Letter('a'))), Letter('a')),
-//          Seq(
-//            ("aa", Map("as" -> Seq(("a", Map.empty)))),
-//            ("a", Map("as" -> Seq(("", Map.empty)))),
-//          )),
-//        (
-//          "abacbcdy",
-//          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
-//          Seq(
-//            ("abac", Map("toto" -> Seq(("bac", Map.empty))))
-//          )),
+        (
+          "aecobc",
+          A6,
+          Seq(
+            ("aeco", Map("toto" -> Seq(("ec", Map.empty)))),
+            ("ae", Map.empty))),
+        (
+          "aa",
+          sequence(star(Letter('a')), Letter('a')),
+          Seq(
+            ("aa", Map.empty),
+            ("a", Map.empty)),
+        ),
+        (
+          "aa",
+          sequence(named("as", star(Letter('a'))), Letter('a')),
+          Seq(
+            ("aa", Map("as" -> Seq(("a", Map.empty)))),
+            ("a", Map("as" -> Seq(("", Map.empty)))),
+          )),
+        (
+          "abacbcdy",
+          sequence(Letter('a'), named("toto", Letter('b'), Letter('a'), Letter('c'))),
+          Seq(
+            ("abac", Map("toto" -> Seq(("bac", Map.empty))))
+          )),
         (
           "abacbcdy",
           A7,
           Seq(
-            ("abacbcd", Map("toto" -> ("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty)))))))),
+            ("abacbcd", Map("toto" -> Seq(("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty))))))))),
       ).zipWithIndex.foreach{
         case ((string, automaton:Automaton[E], expMatches), i) =>
           val seq = fixSeq(string)
@@ -111,14 +111,14 @@ class AutomataSpec extends FunSpec {
           )
           val actualMatchesStr = actualMatches.map(toStr)
 
-          it(s"${1+i}. should find ${expMatches.map(_._1)} in $string with automaton $automaton", fr.dcram.InProgress) {
+          it(s"${1+i}. should find ${expMatches.map(_._1)} in $string with automaton $automaton") {
             val actual = actualMatches.map(m => matchToString(m))
             val expTokens = expMatches.map(_._1)
             assert(actual == expTokens)
           }
           actualMatchesStr.zip(expMatches).foreach {
             case (actual, expected) =>
-              it(s"${1+i}. Match ${actual} should eq ${expected}", fr.dcram.InProgress) {
+              it(s"${1+i}. Match $actual should eq $expected") {
                 assert(actual == expected)
               }
           }

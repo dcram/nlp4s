@@ -3,8 +3,6 @@ import fr.dcram.nlp4s.automata.RegexMatch
 import fr.dcram.nlp4s.model.Token
 
 class FrAddressEngine extends NerEngine[Address] {
-  import fr.dcram.nlp4s.automata.AutomatonFactory._
-  import fr.dcram.nlp4s.automata.Quantifiers._
 
   object StreetNum extends RegexMatcher("""\d+""".r)
   object StreetType extends SetMatcher("rue", "place", "avenue")
@@ -25,10 +23,10 @@ class FrAddressEngine extends NerEngine[Address] {
   )
 
   rule("one-line")(
-    named("num", StreetNum),
-    named("streetType", StreetType),
-    named("streetName", quantified(StreetNameW, MN(1,8))),
-    zeroOne(Sep),
-    named("zip", Zip),
-    named("city", City))
+    %("num")(StreetNum),
+    %("streetType")(StreetType),
+    %("streetName")(StreetNameW.mn(1,8)),
+    Sep?,
+    %("zip")(Zip),
+    %("city")(City))
 }

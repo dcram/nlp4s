@@ -1,12 +1,15 @@
 package fr.dcram.nlp4s.ner
 
-import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.automata._
+import fr.dcram.nlp4s.model.Token
+
 import scala.collection.mutable
 
-trait NerEngine[NEType] {
+trait NerEngine[NEType]  {
 
   private[this] val rules:mutable.ListBuffer[(String, Transitionable[Token])] = new mutable.ListBuffer[(String, Transitionable[Token])]
+  def %[Tok](name:String)(a:Transitionable[Tok]):Transitionable[Tok] = AutomatonFactory.named(name, a)
+
 
   def rule(name:String)(s:Transitionable[Token]*):Unit = {
     require(s.length > 0, s"Empty list of transitionables")

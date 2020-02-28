@@ -13,9 +13,20 @@ object AutomatonFactory {
     Automaton(initState)
   }
 
-  def or[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
-    val target = newAcceptingState[Tok]
-    Automaton(State(idGen.incrementAndGet(), transitions = transitionables.map(_.asTransition(target))))
+  def asAutomaton[Tok](t:Transitionable[Tok]) = t match {
+    case a:Automaton[Tok] => a
+    case _ =>
+      val target = newAcceptingState[Tok]
+      Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target))))
+  }
+  def or[Tok](transitionables:Transitionable[Tok]*):Transitionable[Tok] = {
+    require(transitionables.size > 0)
+    if(transitionables.size == 1)
+      transitionables.head
+    else {
+      val target = newAcceptingState[Tok]
+      Automaton(State(idGen.incrementAndGet(), transitions = transitionables.map(_.asTransition(target))))
+    }
   }
 
   private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), List.empty, accepting = true)
@@ -24,7 +35,7 @@ object AutomatonFactory {
     override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
   }
 
-  def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Automaton[Tok] = quantifier match {
+  def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Transitionable[Tok] = quantifier match {
     case ZeroOne => zeroOne(t)
     case MN(m,n) if m == n => quantified(t, N(m))
     case MN(m,n) => sequence(quantified(t, N(m)),quantified(t, ZeroN(n-m)))
@@ -39,13 +50,13 @@ object AutomatonFactory {
     case e => throw new UnsupportedOperationException(s"Unsupported quantifier: ${e.getClass.getSimpleName}")
   }
 
-  def zeroOne[Tok](t:Transitionable[Tok]):Automaton[Tok] = {
+  def zeroOne[Tok](t:Transitionable[Tok]):Transitionable[Tok] = {
     val target = newAcceptingState[Tok]
     Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
   }
-  def oneN[Tok](t:Transitionable[Tok]):Automaton[Tok] = quantified(t, Plus)
+  def oneN[Tok](t:Transitionable[Tok]):Transitionable[Tok] = quantified(t, Plus)
 
-  def star[Tok](t:Transitionable[Tok]):Automaton[Tok] = {
+  def star[Tok](t:Transitionable[Tok]):Transitionable[Tok] = {
     new AutomatonBuilder().initialState(1).state(2, accepting = true)
       .transition(1, 1, t)
       .epsilon(1, 2)

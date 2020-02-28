@@ -7,11 +7,11 @@ class AutomatonFactorySpec extends FunSpec {
   import AutomatonFactory._
 
   describe(AutomatonFactory.toString) {
-    def testMatching(index:Int, seqString:String, aut:Automaton[E], matches: Seq[String]):Unit = it(s"$index. should extract matches $matches when matching $aut on sequence $seqString") {
-      assert(seqMatch(aut, fixSeq(seqString)).map(_.tokens.map(_.c).mkString) == matches)
+    def testMatching(index:Int, seqString:String, aut:Transitionable[E], matches: Seq[String]):Unit = it(s"$index. should extract matches $matches when matching $aut on sequence $seqString") {
+      assert(seqMatch(aut.asInstanceOf[Automaton[E]], fixSeq(seqString)).map(_.tokens.map(_.c).mkString) == matches)
     }
 
-    def testAll(tests:(String, Automaton[E], Seq[String])*):Unit = {
+    def testAll(tests:(String, Transitionable[E], Seq[String])*):Unit = {
       tests.zipWithIndex.foreach{case ((s, aut, matches), i) => testMatching(1+i, s, aut, matches)}
     }
     describe("preambule") {

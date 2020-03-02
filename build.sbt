@@ -9,7 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "nlp4s",
     libraryDependencies += scalaTest % Test,
-    libraryDependencies += scalaLogging,
+    libraryDependencies += scalaLogging % Test,
     libraryDependencies += logback % Test
   )
 

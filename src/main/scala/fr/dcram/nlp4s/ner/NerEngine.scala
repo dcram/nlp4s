@@ -7,6 +7,7 @@ import scala.collection.mutable
 
 trait NerEngine[NEType]  {
 
+
   implicit class TransitionableWithDsl[Tok](t:Transitionable[Tok]) extends Transitionable[Tok] with AutomatonBuilderDsl[Tok] {
     override def asTransition(target: State[Tok]): Transition[Tok] = t.asTransition(target)
   }
@@ -23,13 +24,14 @@ trait NerEngine[NEType]  {
   private def ruleNames = rules.map(_._1).toSet
 
 
-  def toNameEntity(m:RegexMatch[Token]):NEType
+  def toNameEntity(m:NerMatch):NEType
   def findAllMatchesIn(seq:Seq[Token]):Iterable[NEType] = {
 
     val automaton = AutomatonFactory.asAutomaton(AutomatonFactory.or(rules.map(_._2):_*))
     seqMatch(automaton, seq)
       .map(_.groups.toSeq.head)
       .flatMap {case (ruleName, matches) => matches}
+      .map(NerMatch.apply)
       .map(toNameEntity)
 
   }

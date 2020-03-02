@@ -10,5 +10,7 @@ trait AutomatonBuilderDsl[Tok] {
     def n_inf(n:Int):Transitionable[Tok] = AutomatonFactory.quantified(this, Quantifiers.NStar(n))
     def zeroN(n:Int):Transitionable[Tok] = AutomatonFactory.quantified(this, Quantifiers.ZeroN(n))
     def ?():Transitionable[Tok] = AutomatonFactory.zeroOne(this)
+    def |(o:Transitionable[Tok]):Transitionable[Tok] = AutomatonFactory.or(this, o)
+    def ~>(o:Transitionable[Tok]):Transitionable[Tok] = AutomatonFactory.sequence(this, o)
     def opt():Transitionable[Tok] = AutomatonFactory.zeroOne(this)
 }

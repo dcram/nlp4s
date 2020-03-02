@@ -6,7 +6,7 @@ class FrAddressEngine extends NerEngine[Address] {
 
   object StreetNum extends RegexMatcher("""\d+""".r)
   object StreetType extends SetMatcher("rue", "place", "avenue")
-  object Zip extends RegexMatcher("""\d{5}""".r)
+  val Zip = RegexMatcher("""\b\d{5}\b""".r) | (RegexMatcher("""\b\d{2}\b""".r) ~> RegexMatcher("""\b\d{3}\b""".r))
   object City extends TxtMatcher(_.charAt(0).isUpper)
   object Sep extends SetMatcher(",", "-")
   object StreetNameW extends RegexMatcher("""[\w-']+""".r)
@@ -23,10 +23,7 @@ class FrAddressEngine extends NerEngine[Address] {
   )
 
   rule("one-line")(
-    %("num")(StreetNum),
-    %("streetType")(StreetType),
-    %("streetName")(StreetNameW.mn(1,8)),
-    Sep?,
-    %("zip")(Zip),
-    %("city")(City))
+    %("num")(StreetNum), %("streetType")(StreetType), %("streetName")(StreetNameW.mn(1,8)),
+    Sep.?,
+    %("zip")(Zip), %("city")(City))
 }

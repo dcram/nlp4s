@@ -8,7 +8,9 @@ class AddressEngineSpec extends FunSpec {
   describe(classOf[FrAddressEngine].toString) {
     val engine = new FrAddressEngine
     Seq(
-      ("10 rue Paul Blanchard , 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes"))
+      ("10 rue Paul Blanchard , 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
+      ("10 rue Paul Blanchard 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
+      ("10 rue Paul Blanchard 44 000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44 000", "Nantes")),
     ).map {
       case ((sentence, Some(address@(num, streetType, streetName, zip, city)))) =>
         it(s"should extract ${address} in $sentence") {

@@ -28,9 +28,11 @@ trait NerEngine[NEType]  {
   def toNameEntity(m:NerMatch):NEType
   def tokenizer:Tokenizer
   private[this] lazy val _tokenizer = tokenizer
+  private[this] lazy val automaton = AutomatonFactory.asAutomaton(AutomatonFactory.or(rules.map(_._2):_*))
+
+  def tokenize(str:String):Stream[Token] = _tokenizer.tokenize(str)
   def findAllMatchesIn(srcStr:String):Iterable[NEType] = {
-    val seq = _tokenizer.tokenize(srcStr)
-    val automaton = AutomatonFactory.asAutomaton(AutomatonFactory.or(rules.map(_._2):_*))
+    val seq = tokenize(srcStr)
     seqMatch(automaton, seq)
       .map(_.groups.toSeq.head)
       .flatMap {case (ruleName, matches) => matches}

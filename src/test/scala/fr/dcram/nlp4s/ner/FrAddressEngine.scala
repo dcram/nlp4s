@@ -7,11 +7,7 @@ class FrAddressEngine extends NerEngine[Address] {
 
   override def tokenizer: Tokenizer = Nlp4s.tokenizer("fr")
 
-  private val streetTypes = Map(
-    "rue" -> "rue",
-    "avenue" -> "avenue",
-    "av" -> "avenue",
-  )
+  private val streetTypes = MapResource("resource://fr/street-types.map", sep = ',')
 
   private object StreetNum extends RegexMatcher("""\d+""".r)
   private val StreetType = SetMatcher(streetTypes.keys.toSeq:_*) ~> StringMatcher(".").?

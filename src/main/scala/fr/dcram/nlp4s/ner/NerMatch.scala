@@ -3,7 +3,7 @@ package fr.dcram.nlp4s.ner
 import fr.dcram.nlp4s.automata.RegexMatch
 import fr.dcram.nlp4s.model.Token
 
-case class NerMatch(m:RegexMatch[Token]) {
+case class NerMatch(m:RegexMatch[Token], srcString:String) {
 
   private[this] val JoinChar = " "
 
@@ -11,6 +11,6 @@ case class NerMatch(m:RegexMatch[Token]) {
   def text(group:String):String =  m.groups(group).head.tokens.map(_.text).mkString(JoinChar)
   def begin:Int = m.tokens.head.begin
   lazy val end:Int = m.tokens.last.end
-  def text:String =  m.tokens.map(_.text).mkString(JoinChar)
+  def text:String =  srcString.substring(begin, end)
 
 }

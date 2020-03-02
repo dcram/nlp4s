@@ -3,6 +3,7 @@ package fr.dcram.nlp4s
 import fr.dcram.nlp4s.model.Token
 
 import scala.util.matching.Regex
+import scala.language.implicitConversions
 
 package object ner {
 
@@ -16,4 +17,8 @@ package object ner {
     val valueSet = Set(values)
     override def matches(tok: Token): Boolean = values.contains(tok.text)
   }
+  case class StringMatcher(str:String) extends NerTokenMatcher {
+    override def matches(tok: Token): Boolean = tok.text == str
+  }
+  implicit def toStringMatcher(str:String):StringMatcher = StringMatcher(str)
 }

@@ -13,10 +13,14 @@ package object ner {
   case class TxtMatcher(f:String => Boolean) extends NerTokenMatcher {
     override def matches(tok: Token): Boolean = f(tok.text)
   }
-  case class SetMatcher(values:String*) extends NerTokenMatcher {
-    val valueSet = Set(values)
-    override def matches(tok: Token): Boolean = values.contains(tok.text)
+
+  class AbstractSetMatcher(f:String => String, values: Iterable[String]) extends NerTokenMatcher {
+    private val valueSet = values.map(f).toSet
+    override def matches(tok: Token): Boolean = valueSet.contains(f(tok.text))
+    def lower = new AbstractSetMatcher(_.toLowerCase, values)
   }
+  case class SetMatcher(values:String*) extends AbstractSetMatcher(s => s, values)
+
   case class StringMatcher(str:String) extends NerTokenMatcher {
     override def matches(tok: Token): Boolean = tok.text == str
   }

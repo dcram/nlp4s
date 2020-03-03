@@ -5,8 +5,8 @@ import scala.language.implicitConversions
 
 class AddressEngineSpec extends FunSpec {
 
-  describe(classOf[FrAddressEngine].toString) {
-    val engine = new FrAddressEngine
+  describe(classOf[AddressEngine].toString) {
+    val engine = new AddressEngine
     Seq(
       ("10 rue Paul Blanchard , 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
       ("10 rue Paul Blanchard 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),

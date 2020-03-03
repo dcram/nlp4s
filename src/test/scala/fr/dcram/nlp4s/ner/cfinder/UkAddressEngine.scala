@@ -1,13 +1,14 @@
-package fr.dcram.nlp4s.ner
+package fr.dcram.nlp4s.ner.cfinder
 
 import fr.dcram.nlp4s.Nlp4s
+import fr.dcram.nlp4s.ner._
 import fr.dcram.nlp4s.tokenizer.Tokenizer
 
-class FrAddressEngine extends NerEngine[Address] {
+class UkAddressEngine extends NerEngine[NerAddress] {
 
-  override def tokenizer: Tokenizer = Nlp4s.tokenizer("fr")
+  override def tokenizer: Tokenizer = Nlp4s.tokenizer("uk")
 
-  private val streetTypes = MapResource("resource://fr/street-types.map", sep = ',')
+  private val streetTypes = NerResource.asMap("resource://fr/street-types.map", sep = ',')
 
   private object StreetNum extends RegexMatcher("""\d+""".r)
   private val StreetType = SetMatcher(streetTypes.keys.toSeq:_*) ~> StringMatcher(".").?
@@ -16,7 +17,7 @@ class FrAddressEngine extends NerEngine[Address] {
   private object Sep extends SetMatcher(",", "-")
   private object StreetNameW extends RegexMatcher("""[\w-']+""".r)
 
-  override def toNameEntity(m: NerMatch): Address = Address(
+  override def toNameEntity(m: NerMatch): NerAddress = NerAddress(
     num = m.textOpt("num"),
     streetType = m.textOpt("streetType").map(_.replaceAll("\\.", "").trim).flatMap(streetTypes.get),
     streetName = m.textOpt("streetName"),

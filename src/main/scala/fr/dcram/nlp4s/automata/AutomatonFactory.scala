@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 object AutomatonFactory {
   import Quantifiers._
 
-  private val idGen = new AtomicInteger(0)
+  val idGen = new AtomicInteger(0)
   def sequence[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
     val initState = transitionables.foldRight(newAcceptingState[Tok]){
       case (t, target) => State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target)))

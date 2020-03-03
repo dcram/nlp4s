@@ -6,7 +6,7 @@ trait AutomatonBuilderDsl[Tok] {
     def mn(m:Int, n:Int):Transitionable[Tok] = repeat(m,n)
     def *():Transitionable[Tok] = AutomatonFactory.star(this)
     def n(n:Int):Transitionable[Tok] = repeat(n,n)
-    def +(n:Int):Transitionable[Tok] = AutomatonFactory.oneN(this)
+    def +():Transitionable[Tok] = AutomatonFactory.oneN(this)
     def n_inf(n:Int):Transitionable[Tok] = AutomatonFactory.quantified(this, Quantifiers.NStar(n))
     def zeroN(n:Int):Transitionable[Tok] = AutomatonFactory.quantified(this, Quantifiers.ZeroN(n))
     def ?():Transitionable[Tok] = AutomatonFactory.zeroOne(this)

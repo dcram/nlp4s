@@ -19,7 +19,7 @@ class DeAddressEngineSpec extends FunSpec {
       ("Am Forsthaus Gravenbruch 24, 63263 Neu-Isenburg", Some("24"), Some("Bruch"), Some("Am Forsthaus Graven"), "63263", "Neu-Isenburg"),
       ("Im Bangert 1, 64658 Fürth", Some("1"), Some("other"), Some("Im Bang"), "64658", "Fürth"),
       ("Carl-Legien-Strasse 15, 63073 Offenbach am Main", Some("15"), Some("Strasse"), Some("Carl-Legien-"), "63073", "Offenbach am Main"),
-      ("Schmerzker Ring 15, 14776 Brandenburg an der Havel", Some("15"), Some("Ring"), Some("Schmerzker"), "14776", "Brandenburg an der Havel"),
+      ("Schmerzker Ring 15, 14776 Brandenburg an der Havel", Some("15"), Some("Ring"), Some("Schmerzker"), "14776", "Brandenburg an der Havel")
     ).foreach {
       case (sentence, number, streetType, streetName, zipCode, city) =>
         val n = 1

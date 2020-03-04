@@ -83,7 +83,7 @@ package object automata {
   }
   case class AutTransit[Tok](name:Option[String], automaton:Automaton[Tok], override val target:State[Tok]) extends Transition[Tok](target) {
     override def toString: String = s"${name.map(s => s"@($s)").getOrElse("")}Automaton"
-    override def instantiate: AutTransitInst[Tok] = AutTransitInst(this, AutInst(automaton))
+    override def instantiate: AutTransitInst[Tok] = AutTransitInst(this, AutInst.fromAut(automaton))
   }
   case class MatcherTransit[Tok](matcher:TokenMatcher[Tok], override val target:State[Tok]) extends Transition[Tok](target) {
     override def toString: String = matcher.getClass.getSimpleName
@@ -116,8 +116,7 @@ package object automata {
   }
 
   object AutInst{
-    def apply[Tok](automaton:Automaton[Tok]):AutInst[Tok] = new AutInst[Tok](StateInst[Tok](automaton.initialState),List.empty)
-    def apply[Tok](current: StateInst[Tok], matchStack:List[(StateInst[Tok], Match[Tok])]):AutInst[Tok] = new AutInst(current,matchStack)
+    def fromAut[Tok](automaton:Automaton[Tok]):AutInst[Tok] = new AutInst[Tok](StateInst[Tok](automaton.initialState),List.empty)
   }
 
 
@@ -272,7 +271,7 @@ package object automata {
   def allPrefixMatches[Tok](a:Automaton[Tok], s: Seq[Tok]):Seq[RegexMatch[Tok]] = {
     collectPrefixMatches(
       tokenify(s).tail, // rm the SeqStart token
-      AutInst(a),
+      AutInst.fromAut(a),
       List.empty)
   }
 
@@ -280,7 +279,7 @@ package object automata {
   Tries to match the automaton strictly at the beginning of the sequence.
    */
   private[this] def prefixSeqMatch[Tok](a:Automaton[Tok], sequence: Seq[Token[Tok]]): Option[(Seq[Token[Tok]], AutInst[Tok])] = {
-    nextPrefixMatch(sequence, AutInst(a))
+    nextPrefixMatch(sequence, AutInst.fromAut(a))
   }
 
 

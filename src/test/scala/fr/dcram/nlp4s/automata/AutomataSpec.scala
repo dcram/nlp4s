@@ -26,7 +26,7 @@ class AutomataSpec extends FunSpec {
       Seq(
         ("", ZeroOneA, Seq("")),
         ("aa", ZeroOneA, Seq("a", "a", "")),
-        ("b", ZeroOneA, Seq("", "")),
+        ("b", ZeroOneA, Seq("", ""))
       ).foreach {
         case (s, aut, matches) => doTest(s, aut, matches)
       }
@@ -35,7 +35,7 @@ class AutomataSpec extends FunSpec {
     describe("non overlapping") {
       Seq(
         ("aba", AutAConsA, Seq("aba")),
-        ("abacadafa", AutAConsA, Seq("aba", "ada")),
+        ("abacadafa", AutAConsA, Seq("aba", "ada"))
       ).foreach {
         case (s, aut, matches) => doTest(s, aut, matches)
       }
@@ -52,7 +52,7 @@ class AutomataSpec extends FunSpec {
         (("alSca", AutVowConsCons), Seq("alS", "al")),
         (("acccab", AutVowConsPlus), Seq("accc", "acc", "ac")),
         (("aecobc", A4), Seq("aeco")),
-        (("aecobc", A5), Seq("aeco", "ae")),
+        (("aecobc", A5), Seq("aeco", "ae"))
       ).zipWithIndex.foreach{
         case (((string, automaton:Automaton[E]), expected), i) =>
           val seq = fixSeq(string)
@@ -78,14 +78,14 @@ class AutomataSpec extends FunSpec {
           sequence(star(Letter('a')), Letter('a')),
           Seq(
             ("aa", Map.empty),
-            ("a", Map.empty)),
+            ("a", Map.empty))
         ),
         (
           "aa",
           sequence(named("as", star(Letter('a'))), Letter('a')),
           Seq(
             ("aa", Map("as" -> Seq(("a", Map.empty)))),
-            ("a", Map("as" -> Seq(("", Map.empty)))),
+            ("a", Map("as" -> Seq(("", Map.empty))))
           )),
         (
           "abacbcdy",
@@ -97,7 +97,7 @@ class AutomataSpec extends FunSpec {
           "abacbcdy",
           A7,
           Seq(
-            ("abacbcd", Map("toto" -> Seq(("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty))))))))),
+            ("abacbcd", Map("toto" -> Seq(("bacbcd", Map("tata" -> Seq(("bac", Map.empty), ("bc", Map.empty)))))))))
       ).zipWithIndex.foreach{
         case ((string, automaton:Automaton[E], expMatches), i) =>
           val seq = fixSeq(string)

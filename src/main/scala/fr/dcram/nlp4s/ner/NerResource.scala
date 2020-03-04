@@ -12,7 +12,7 @@ object NerResource {
     val src = Option(parsed.getScheme).map(_.toLowerCase) match {
       case Some("file") => Source.fromFile(parsed.getRawSchemeSpecificPart.replaceFirst("^//", ""))
       case Some("resource") =>
-        Source.fromResource(parsed.getRawSchemeSpecificPart.replaceFirst("^//", ""))
+        Source.fromInputStream(getClass.getResourceAsStream(parsed.getRawSchemeSpecificPart.replaceFirst("^//", "/")))
       case Some(protocol) => throw new UnsupportedOperationException(s"Unsupported protocol: $protocol")
       case None => Source.fromFile(parsed.getRawSchemeSpecificPart.replaceFirst("^//", ""))
     }

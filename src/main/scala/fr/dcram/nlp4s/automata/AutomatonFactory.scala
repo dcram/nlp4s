@@ -33,7 +33,9 @@ object AutomatonFactory {
 
   private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), List.empty, accepting = true)
 
-  def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = {case target: State[Tok] => AutTransit(Some(name), sequence(a:_*), target)}
+  def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = new Transitionable[Tok] {
+    override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
+  }
 
   def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Transitionable[Tok] = quantifier match {
     case ZeroOne => zeroOne(t)

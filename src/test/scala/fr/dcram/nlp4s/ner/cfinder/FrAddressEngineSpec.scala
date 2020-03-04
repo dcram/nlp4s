@@ -31,7 +31,7 @@ class FrAddressEngineSpec extends FunSpec {
       ("4 R SANTEUIL 44000 NANTES", 1, Some("4"), Some("rue"), Some("SANTEUIL"), "44000", "NANTES"),
       ("1 PL ALEX RAYMOND, BP 330, 31770 Colomiers", 1, Some("1"), Some("place"), Some("ALEX RAYMOND"), "31770", "Colomiers"),
       ("5a rue Tata 44000 NANTES", 1, Some("5a"), Some("rue"), Some("Tata"), "44000", "NANTES"),
-      ("Le Furet du Nord – Service Internet, 37 rue Jules Guesde – B.P. 80 359 – 59463 Lomme Cedex", 1, Some("37"), Some("rue"), Some("Jules Guesde"), "59463", "Lomme"),
+      ("Le Furet du Nord – Service Internet, 37 rue Jules Guesde – B.P. 80 359 – 59463 Lomme Cedex", 1, Some("37"), Some("rue"), Some("Jules Guesde"), "59463", "Lomme")
     ).foreach {
       case (sentence, n, number, streetType, streetName, zip, city) =>
         describe(s"sentence $sentence") {

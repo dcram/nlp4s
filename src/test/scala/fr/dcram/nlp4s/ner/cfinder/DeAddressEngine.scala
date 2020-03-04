@@ -53,7 +53,7 @@ class DeAddressEngine extends NerEngine[NerAddress] {
       city = m.text("city"),
       begin = m.begin,
       end = m.end,
-      text = m.text,
+      text = m.text
     )
   }
   rule("one-line")(

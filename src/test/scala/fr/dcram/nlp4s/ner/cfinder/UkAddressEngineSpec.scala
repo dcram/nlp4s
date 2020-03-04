@@ -16,7 +16,7 @@ class UkAddressEngineSpec extends FunSpec {
       ("Unit R4, HAYDN ROAD London NW4 4QE", Some("R4"), Some("road"), Some("HAYDN"), "NW4 4QE", "London"),
       ("292 HAYDNROAD London NW4 4QE", Some("292"), Some("road"), Some("HAYDN"), "NW4 4QE", "London"),
       ("Unit R4 HAYDN ROAD London NW4 4QE", Some("R4"), Some("road"), Some("HAYDN"), "NW4 4QE", "London"),
-      ("Leigh House 28-32 St Paul's Street Leeds LS1 2JT", Some("28-32"), Some("street"), Some("St Paul's"), "LS1 2JT", "Leeds"),
+      ("Leigh House 28-32 St Paul's Street Leeds LS1 2JT", Some("28-32"), Some("street"), Some("St Paul's"), "LS1 2JT", "Leeds")
     ).foreach {
       case (sentence, number, streetType, streetName, zipCode, city) =>
         val n = 1

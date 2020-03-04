@@ -30,7 +30,7 @@ class PersonEngine extends NerEngine[NerPerson] {
     lastname = m.text("lastname"),
     begin = m.begin,
     end = m.end,
-    text = m.text,
+    text = m.text
   )
 
   rule("title-lastname-firstname?")(

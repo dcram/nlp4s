@@ -16,7 +16,7 @@ class PersonEngineSpec extends FunSpec {
       ("Le chapeau de M. Jean-Abdullah Zhang est rond.", 1, Some("M."), Some("Monsieur"), Some("Jean-Abdullah"), "Zhang"),
       ("L'AGE a nommé en qualité de Gérant M. MARITON Bernard.", 1, Some("M."), Some("Monsieur"), Some("Bernard"), "MARITON"),
       ("Le chapeau de M. Aymé Jacquet est rond.", 1, Some("M."), Some("Monsieur"), Some("Aymé"), "Jacquet"),
-      ("Bonnet A, Bonnet B, Bonnet Ab", 1, None, None, Some("Bonnet"), "Ab"),
+      ("Bonnet A, Bonnet B, Bonnet Ab", 1, None, None, Some("Bonnet"), "Ab")
     ).foreach {
       case (sentence, n, title, titleLemma, firstname, lastname) =>
         describe(s"Sentence: $sentence") {

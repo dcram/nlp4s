@@ -10,6 +10,7 @@ trait NerEngine[NEType]  {
 
   implicit class StringImpr(s:String) {
     def lower:String = s.toLowerCase
+    def ascii:String = s.toLowerCase
     def upper:String = s.toUpperCase
     def capped:Boolean = s.charAt(0).isUpper
     def isLower:Boolean = s.forall(_.isLower)

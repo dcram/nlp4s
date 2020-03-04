@@ -10,8 +10,8 @@ package object ner {
   case class RegexMatcher(r:Regex) extends NerTokenMatcher {
     override def matches(tok: Token): Boolean = r.findFirstIn(tok.text).nonEmpty
   }
-  case class TxtMatcher(f:String => Boolean) extends NerTokenMatcher {
-    override def matches(tok: Token): Boolean = f(tok.text)
+  case class TxtMatcher(matchesStr:String => Boolean) extends NerTokenMatcher {
+    override def matches(tok: Token): Boolean = matchesStr(tok.text)
   }
 
   class AbstractSetMatcher(f:String => String, values: Iterable[String]) extends NerTokenMatcher {

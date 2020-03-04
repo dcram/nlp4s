@@ -1,6 +1,7 @@
 package fr.dcram.nlp4s.ner.cfinder
 
 import fr.dcram.nlp4s.Nlp4s
+import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.ner.{StringMatcher, _}
 import fr.dcram.nlp4s.tokenizer.Tokenizer
 
@@ -13,7 +14,13 @@ class PersonEngine extends NerEngine[NerPerson] {
   private val TitleM = SetMatcher(titles.keys.toSeq:_*) ~> StringMatcher(".").?
 
   private object FirstnameWord extends TxtMatcher(str => str.charAt(0).isUpper && str.length > 1 && firstnames.contains(str.lower))
-  val Firstname = FirstnameWord ~> ("-" ~> FirstnameWord).?
+  private object CompoundFirstname extends NerTokenMatcher {
+    override def matches(tok: Token): Boolean = {
+      val names = tok.text.split("-")
+      names.length == 2 && names.forall(n => FirstnameWord.matchesStr(n))
+    }
+  }
+  private val Firstname = FirstnameWord | CompoundFirstname
   private object LastnameWord extends TxtMatcher(str => str.charAt(0).isUpper && str.length > 1)
   private object D extends SetMatcher("de", "d'", "des", "du")
   private object Le extends SetMatcher("la", "le")

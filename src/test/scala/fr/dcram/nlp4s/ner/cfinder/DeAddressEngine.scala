@@ -19,8 +19,7 @@ class DeAddressEngine extends NerEngine[NerAddress] {
       else
         (3 to str.length-3).toStream
           .map(str.splitAt)
-          .filter{case (_,part2) => roadTypes.contains(part2.lower)}
-          .headOption
+          .find{case (_,part2) => roadTypes.contains(part2.lower)}
     }
     override def matches(tok: Token): Boolean = split(tok.text).nonEmpty
   }
@@ -30,7 +29,7 @@ class DeAddressEngine extends NerEngine[NerAddress] {
   private val Zip = RegexMatcher("""\d+""".r)
   private val RoadType: AbstractSetMatcher = SetMatcher(roadTypes.keys.toSeq: _*).lower
   private val Strasse1 = %("morphoStrasse")(GermanProps.?, Capped.?, MorphoStrasse, ".".?)
-  private val Strasse2 = %("streetName")(GermanProps.?, Capped.mn(1,2), %("streetType")(RoadType), ".".?)
+  private val Strasse2 = seq(%("streetName")(GermanProps.?, Capped.mn(1,2)) ~> %("streetType")(RoadType), ".".?)
   private object Sep extends SetMatcher(",", ".", "-", "―", "—", "–", "‒", "-",  "/")
 
 

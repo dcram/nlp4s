@@ -25,4 +25,5 @@ package object ner {
     override def matches(tok: Token): Boolean = tok.text == str
   }
   implicit def toStringMatcher(str:String):StringMatcher = StringMatcher(str)
+  implicit def toRegexMatcher(r:Regex):RegexMatcher = RegexMatcher(r)
 }

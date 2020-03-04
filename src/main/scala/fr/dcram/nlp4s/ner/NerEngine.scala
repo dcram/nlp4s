@@ -32,7 +32,7 @@ trait NerEngine[NEType]  {
   }
 
   private[this] val rules:mutable.ListBuffer[(String, Transitionable[Token])] = new mutable.ListBuffer[(String, Transitionable[Token])]
-  def %[Tok](name:String)(a:Transitionable[Tok]):Transitionable[Tok]  = AutomatonFactory.named(name, a)
+  def %[Tok](name:String)(a:Transitionable[Tok]*):Transitionable[Tok]  = AutomatonFactory.named(name, AutomatonFactory.sequence(a:_*))
 
   def rule(name:String)(s:Transitionable[Token]*):Unit = {
     require(s.nonEmpty, s"Empty list of transitionables")

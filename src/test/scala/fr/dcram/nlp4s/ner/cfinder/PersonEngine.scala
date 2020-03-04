@@ -1,13 +1,12 @@
 package fr.dcram.nlp4s.ner.cfinder
 
-import fr.dcram.nlp4s.Nlp4s
 import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.ner.{StringMatcher, _}
 import fr.dcram.nlp4s.tokenizer.Tokenizer
 
 class PersonEngine extends NerEngine[NerPerson] {
 
-  override def tokenizer: Tokenizer = Nlp4s.tokenizer("fr")
+  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
   private val titles = NerResource.asMap("resource://fr/person-titles.map", sep = '\t')
   private val firstnames = NerResource.asSet("resource://fr/person-firstnames.set")
 

@@ -1,6 +1,5 @@
 package fr.dcram.nlp4s.ner.cfinder
 
-import fr.dcram.nlp4s.Nlp4s
 import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.ner._
 import fr.dcram.nlp4s.tokenizer.Tokenizer
@@ -8,7 +7,7 @@ import fr.dcram.nlp4s.tokenizer.Tokenizer
 class DeAddressEngine extends NerEngine[NerAddress] {
   import fr.dcram.nlp4s.automata.AutomatonFactory._
 
-  override def tokenizer: Tokenizer = Nlp4s.tokenizer("fr")
+  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
   private val roadTypes = NerResource.asMap("resource://de/address-street-types.map", sep = '\t').map{case (k,v) => (k.lower, v)}
 

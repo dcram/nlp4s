@@ -1,6 +1,5 @@
 package fr.dcram.tokenizer
 
-import fr.dcram.nlp4s.Nlp4s
 import fr.dcram.nlp4s.tokenizer.Tokenizer
 import org.scalatest.FunSpec
 
@@ -9,7 +8,7 @@ class TokenizerSpec extends FunSpec {
   describe(classOf[Tokenizer].toString) {
     describe("tokenize") {
       describe("indexing") {
-        val tokenizer = Nlp4s.tokenizer("fr")
+        implicit val tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
         Seq(
           (
             "Bonjour Damien",
@@ -31,7 +30,7 @@ class TokenizerSpec extends FunSpec {
         assert(tokenizer.tokenize(string).map(_.text).toIterable == expTokens)
       }
       describe("fr") {
-        implicit val tokenizer = Nlp4s.tokenizer("fr")
+        implicit val tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
         Seq(
           (
             "Bonjour Damien",
@@ -44,7 +43,8 @@ class TokenizerSpec extends FunSpec {
         ).foreach { case (string, tokens) => it(s"should tokenize ${string}") {assertTok(string, tokens)}}
       }
       describe("uk") {
-        implicit val tokenizer = Nlp4s.tokenizer("uk")
+        implicit val  tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
+
         Seq(
           (
             "Hello John",

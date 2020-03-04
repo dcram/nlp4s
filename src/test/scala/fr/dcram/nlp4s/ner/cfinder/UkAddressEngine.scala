@@ -1,13 +1,12 @@
 package fr.dcram.nlp4s.ner.cfinder
 
-import fr.dcram.nlp4s.Nlp4s
 import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.ner._
 import fr.dcram.nlp4s.tokenizer.Tokenizer
 
 class UkAddressEngine extends NerEngine[NerAddress] {
 
-  override def tokenizer: Tokenizer = Nlp4s.tokenizer("uk")
+  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
 
   private val Unit = SetMatcher("unit", "wing", "box", "bloc", "flat", "building").lower
   private val UnitNum = RegexMatcher("""^(\d+([-]\d+)?[A-Z]?)|([A-Z]\d*)$""".r)

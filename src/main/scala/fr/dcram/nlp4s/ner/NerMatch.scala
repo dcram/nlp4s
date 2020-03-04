@@ -7,7 +7,7 @@ case class NerMatch(regexMatch:RegexMatch[Token], srcString:String) {
 
   def textOpt(groupName:String):Option[String] = groups(groupName).headOption.map(_.text)
   def text(groupName:String):String =  groups(groupName).head.text
-  def groups(groupName:String):Iterable[NerMatch] = regexMatch.groups.get(groupName).getOrElse(Iterable.empty).map(rm => NerMatch(rm, srcString))
+  def groups(groupName:String):Iterable[NerMatch] = regexMatch.groups.getOrElse(groupName, Iterable.empty).map(rm => NerMatch(rm, srcString))
   def begin:Int = regexMatch.tokens.head.begin
   lazy val end:Int = regexMatch.tokens.last.end
   def text:String =  srcString.substring(begin, end)

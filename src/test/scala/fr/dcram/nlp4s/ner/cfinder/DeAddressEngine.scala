@@ -7,7 +7,7 @@ import fr.dcram.nlp4s.tokenizer.Tokenizer
 class DeAddressEngine extends NerEngine[NerAddress] {
   import fr.dcram.nlp4s.automata.AutomatonFactory._
 
-  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
+  override def tokenizer: Tokenizer = Tokenizer("""[(){}.,!?;:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
   private val roadTypes = NerResource.asMap("resource://de/address-street-types.map", sep = '\t').map{case (k,v) => (k.lower, v)}
 
@@ -56,8 +56,6 @@ class DeAddressEngine extends NerEngine[NerAddress] {
       text = m.text,
     )
   }
-
-  import fr.dcram.nlp4s.automata.AutomatonFactory.seq
   rule("one-line")(
     Strasse1 | Strasse2, ("Nr" ~> ".".?).?, %("num")("""^\d+([-]\d+)?[A-Z]?$""".r ~> "[A-K]".r.?),
     Sep?,

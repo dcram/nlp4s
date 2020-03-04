@@ -1,6 +1,7 @@
 package fr.dcram.nlp4s.ner
 
 import org.scalatest.FunSpec
+
 import scala.language.implicitConversions
 
 class AddressEngineSpec extends FunSpec {

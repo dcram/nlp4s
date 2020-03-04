@@ -1,6 +1,5 @@
 package fr.dcram.nlp4s.automata
 
-import fr.dcram.nlp4s.automata.AutomataTests.{AutVowCons, E, fixSeq}
 import org.scalatest.FunSpec
 
 class AutomataSpec extends FunSpec {

@@ -1,8 +1,5 @@
 package fr.dcram.nlp4s.ner
-
-import fr.dcram.nlp4s.automata._
 case class Trie[Tok,V](value:Option[V], children:Map[Tok, Trie[Tok, V]]) {
-  import AutomatonFactory._
   def get(key:List[Tok]):Option[V] = key match {
     case k :: tail => children.get(k) match {
       case Some(childTrie) => childTrie.get(tail)

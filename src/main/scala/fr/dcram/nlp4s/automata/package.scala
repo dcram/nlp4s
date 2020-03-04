@@ -145,7 +145,7 @@ package object automata {
           case ati:AutTransitInst[Tok] => s"[${ati.autInst.tokenToString(ati.autInst.matchStack)}]"
           case o => o.toString
         }
-        s"${tokenToString(tail)}${transitionlabel}"
+        s"${tokenToString(tail)}$transitionlabel"
     }
     override def toString: String = {
       s"@${current.state.id}[${tokenToString(matchStack)}]${if (current.accepting) "✓" else "…"}"

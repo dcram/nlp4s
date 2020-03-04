@@ -15,14 +15,14 @@ object AutomatonFactory {
     Automaton(initState)
   }
 
-  def asAutomaton[Tok](t:Transitionable[Tok]) = t match {
+  def asAutomaton[Tok](t:Transitionable[Tok]):Automaton[Tok] = t match {
     case a:Automaton[Tok] => a
     case _ =>
       val target = newAcceptingState[Tok]
       Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target))))
   }
   def or[Tok](transitionables:Transitionable[Tok]*):Transitionable[Tok] = {
-    require(transitionables.size > 0)
+    require(transitionables.nonEmpty)
     if(transitionables.size == 1)
       transitionables.head
     else {
@@ -33,9 +33,7 @@ object AutomatonFactory {
 
   private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), List.empty, accepting = true)
 
-  def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = new Transitionable[Tok] {
-    override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
-  }
+  def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = {case target: State[Tok] => AutTransit(Some(name), sequence(a:_*), target)}
 
   def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Transitionable[Tok] = quantifier match {
     case ZeroOne => zeroOne(t)

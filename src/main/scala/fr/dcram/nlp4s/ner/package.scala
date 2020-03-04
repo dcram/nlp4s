@@ -2,8 +2,8 @@ package fr.dcram.nlp4s
 
 import fr.dcram.nlp4s.model.Token
 
-import scala.util.matching.Regex
 import scala.language.implicitConversions
+import scala.util.matching.Regex
 
 package object ner {
 

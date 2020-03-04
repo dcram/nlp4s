@@ -7,7 +7,7 @@ import fr.dcram.nlp4s.tokenizer.Tokenizer
 import scala.io.Source
 
 object NerResource {
-  def source(uri:String) = {
+  def source(uri:String):Source = {
     val parsed = new URI(uri)
     val src = Option(parsed.getScheme).map(_.toLowerCase) match {
       case Some("file") => Source.fromFile(parsed.getRawSchemeSpecificPart.replaceFirst("^//", ""))

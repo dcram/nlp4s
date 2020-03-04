@@ -6,6 +6,8 @@ object AutomatonFactory {
   import Quantifiers._
 
   val idGen = new AtomicInteger(0)
+
+  def seq[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = sequence(transitionables:_*)
   def sequence[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
     val initState = transitionables.foldRight(newAcceptingState[Tok]){
       case (t, target) => State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target)))
@@ -38,6 +40,7 @@ object AutomatonFactory {
   def quantified[Tok](t:Transitionable[Tok], quantifier:Quantifier):Transitionable[Tok] = quantifier match {
     case ZeroOne => zeroOne(t)
     case MN(m,n) if m == n => quantified(t, N(m))
+    case MN(m,n) if m == 0 => sequence(quantified(t, N(n)))
     case MN(m,n) => sequence(quantified(t, N(m)),quantified(t, ZeroN(n-m)))
     case ZeroN(1) => zeroOne(t)
     case ZeroN(n) => sequence(Seq.fill(n)(quantified(t, ZeroOne)):_*)

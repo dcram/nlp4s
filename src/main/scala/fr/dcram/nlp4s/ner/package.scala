@@ -16,6 +16,7 @@ package object ner {
 
   class AbstractSetMatcher(f:String => String, values: Iterable[String]) extends NerTokenMatcher {
     private val valueSet = values.map(f).toSet
+
     override def matches(tok: Token): Boolean = valueSet.contains(f(tok.text))
     def lower = new AbstractSetMatcher(_.toLowerCase, values)
   }

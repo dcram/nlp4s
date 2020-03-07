@@ -121,7 +121,7 @@ package object automata {
 
 
   object StateInst {
-    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions.map(_.instantiate).toList)
+    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions.toStream.map(_.instantiate).toList)
     def apply[Tok](accepting:Boolean, state:State[Tok], rest:List[TransitInst[Tok]]):StateInst[Tok] = new StateInst( state, accepting,rest)
   }
 

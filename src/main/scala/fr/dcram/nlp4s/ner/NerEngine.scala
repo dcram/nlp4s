@@ -3,8 +3,10 @@ package fr.dcram.nlp4s.ner
 import fr.dcram.nlp4s.automata.{AutomatonBuilderDsl, _}
 import fr.dcram.nlp4s.model.Token
 import fr.dcram.nlp4s.tokenizer.Tokenizer
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 trait NerEngine[NEType]  {
 
@@ -55,8 +57,20 @@ trait NerEngine[NEType]  {
       .map(_.groups.toSeq.head)
       .flatMap {case (ruleName, matches) => matches}
       .map(rm => NerMatch.apply(rm, srcStr))
-      .map(toNameEntity)
+      .map(nm => (nm, Try(toNameEntity(nm))))
+      .collect {
+        case (nm, Success(ne)) =>
+          Some(ne)
+        case (nm, Failure(t)) =>
+          val truncSent = if (srcStr.length() > 100) "..." else ""
+          NerEngine.logger.warn(s"""Got an exception on named entity "${nm.text}" while parsing sentence ${srcStr.take(100)}$truncSent""", t)
+          None
+      }.collect{case Some(ne) => ne}
 
   }
 
+}
+
+object NerEngine {
+  private lazy val logger = LoggerFactory.getLogger(NerEngine.toString)
 }

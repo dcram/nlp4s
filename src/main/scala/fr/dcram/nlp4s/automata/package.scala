@@ -19,7 +19,7 @@ package object automata {
     def asNamedTransition(name: String, target: State[Tok]): Transition[Tok] = new AutTransit[Tok](Some(name), this, target)
   }
 
-  case class State[Tok](id:Long,transitions: Seq[Transition[Tok]], accepting:Boolean = false)  {
+  case class State[Tok](id:Long, transitions: () => Seq[Transition[Tok]], accepting:Boolean = false)  {
     override def toString: String = s"State($accepting)"}
 
 
@@ -118,7 +118,7 @@ package object automata {
 
 
   object StateInst {
-    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions.toStream.map(_.instantiate).toList)
+    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions().toStream.map(_.instantiate).toList)
     def apply[Tok](accepting:Boolean, state:State[Tok], rest:List[TransitInst[Tok]]):StateInst[Tok] = new StateInst( state, accepting,rest)
   }
 

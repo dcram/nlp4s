@@ -5,7 +5,7 @@ import fr.dcram.nlp4s.tokenizer.Tokenizer
 
 class FrAddressEngine extends NerEngine[NerAddress] {
 
-  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
+  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôâäëïöüÂÄËÏÖÜ]+(?:-[\wßçÇÀâàéèÉÈùÙÊêîÎûÛÔôäëïöüÂÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
   private val streetTypes = NerResource.asMap("resource://fr/address-street-types.map", sep = '\t').map{case (k,v) => (k.lower, v)}
 

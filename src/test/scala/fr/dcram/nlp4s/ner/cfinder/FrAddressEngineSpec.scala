@@ -19,7 +19,7 @@ class FrAddressEngineSpec extends FunSpec {
       ("7ter rue Étienne Larchey, 44 000 Nantes", 1, Some("7ter"), Some("rue"), Some("Étienne Larchey"), "44000", "Nantes"),
       ("38 rue de Liège\n75008 Paris", 1, Some("38"), Some("rue"), Some("de Liège"), "75008", "Paris"),
       ("4 RUE DU GENERAL GALLIENI 97200 FORT DE FRANCE", 1, Some("4"), Some("rue"), Some("DU GENERAL GALLIENI"), "97200", "FORT"),
-//      ("Château Machin rue Étienne Larchey, 44 000 Nantes", 1,None, Some("rue"), Some("Étienne Larchey"), "44000", "Nantes"),
+      ("Château Machin rue Étienne Larchey, 44 000 Nantes", 1,None, Some("rue"), Some("Étienne Larchey"), "44000", "Nantes"),
       ("7-9 rue Étienne Larchey, 44 000 Nantes", 1, Some("7-9"), Some("rue"), Some("Étienne Larchey"), "44000", "Nantes"),
       ("38 rue de Liège - 75008 Paris", 1, Some("38"), Some("rue"), Some("de Liège"), "75008", "Paris"),
       ("4 ALLEE JEAN BART 44000 NANTES", 1, Some("4"), Some("allee"), Some("JEAN BART"), "44000", "NANTES"),

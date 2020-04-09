@@ -2,7 +2,8 @@ package fr.dcram.nlp4s.ner
 
 import java.net.URI
 
-import fr.dcram.nlp4s.tokenizer.Tokenizer
+import fr.dcram.nlp4s.automata.Trie
+import fr.dcram.nlp4s.model.Token
 
 import scala.io.Source
 
@@ -27,10 +28,15 @@ object NerResource {
       .map(m => m(0) -> m(1))
       .toMap
   }
-  def asTrie(uri:String, sep:Char)(implicit tokenizer:Tokenizer):Trie[String, Iterable[String]] = {
+
+  def asTrie(uri:String, sep:Char, tokenizer:String => Iterable[Token], tokPreparator:Token => String):Trie[String, Iterable[String], Token] = {
     val map = asMap(uri, sep)
-    Trie(map.map{case(k,v) => (tokenizer.tokenize(k).map(_.text), v)})
+    Trie.fromEntries[String, String, Token](
+      entries = map.map{case(k,v) => (tokenizer(k).map(tokPreparator).toSeq, v)},
+      tokPreparator = tokPreparator
+    )
   }
+
   def asSet(uri:String):Set[String] = {
     source(uri).getLines().map(_.trim)
       .filterNot(_.startsWith("#"))

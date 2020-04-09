@@ -9,13 +9,8 @@ object RegexMatch {
     @tailrec
     def collect(matchStack:List[(StateInst[Tok], Match[Tok])], tokens:Seq[Tok], groups:Map[String, Seq[RegexMatch[Tok]]]):(Seq[Tok], Map[String, Seq[RegexMatch[Tok]]]) = {
       matchStack match {
-        case (_, EpsilonMatch(_)) :: rest =>
-          collect(rest, tokens, groups)
-        case (_, TokenMatch(tok, _)) :: rest =>
-          tok match {
-            case UserToken(t) => collect(rest, t +: tokens, groups)
-            case _ => collect(rest, tokens, groups)
-          }
+        case (_, TokenMatch(matchedTokens, _)) :: rest =>
+          collect(rest, matchedTokens.collect{case UserToken(t) => t} ++ tokens, groups)
         case (_, AutMatch(ti)) :: rest =>
           val subMatch = RegexMatch(ti.autInst)
           ti.autTransit.name match {

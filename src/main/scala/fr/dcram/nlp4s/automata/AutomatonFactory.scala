@@ -10,7 +10,7 @@ object AutomatonFactory {
   def seq[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = sequence(transitionables:_*)
   def sequence[Tok](transitionables:Transitionable[Tok]*):Automaton[Tok] = {
     val initState = transitionables.foldRight(newAcceptingState[Tok]){
-      case (t, target) => State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target)))
+      case (t, target) => State(idGen.incrementAndGet(), transitions = () => Seq(t.asTransition(target)))
     }
     Automaton(initState)
   }
@@ -19,7 +19,7 @@ object AutomatonFactory {
     case a:Automaton[Tok] => a
     case _ =>
       val target = newAcceptingState[Tok]
-      Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target))))
+      Automaton(State(idGen.incrementAndGet(), transitions = () => Seq(t.asTransition(target))))
   }
   def or[Tok](transitionables:Transitionable[Tok]*):Transitionable[Tok] = {
     require(transitionables.nonEmpty)
@@ -27,11 +27,11 @@ object AutomatonFactory {
       transitionables.head
     else {
       val target = newAcceptingState[Tok]
-      Automaton(State(idGen.incrementAndGet(), transitions = transitionables.map(_.asTransition(target))))
+      Automaton(State(idGen.incrementAndGet(), transitions = () => transitionables.map(_.asTransition(target))))
     }
   }
 
-  private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), List.empty, accepting = true)
+  private def newAcceptingState[Tok]:State[Tok] = State[Tok](idGen.incrementAndGet(), () => List.empty, accepting = true)
 
   def named[Tok](name:String, a:Transitionable[Tok]*):Transitionable[Tok] = new Transitionable[Tok] {
     override def asTransition(target: State[Tok]): Transition[Tok] = AutTransit(Some(name), sequence(a:_*), target)
@@ -55,7 +55,7 @@ object AutomatonFactory {
 
   def zeroOne[Tok](t:Transitionable[Tok]):Transitionable[Tok] = {
     val target = newAcceptingState[Tok]
-    Automaton(State(idGen.incrementAndGet(), transitions = Seq(t.asTransition(target), EpsilonTransit(target))))
+    Automaton(State(idGen.incrementAndGet(), transitions = () => Seq(t.asTransition(target), EpsilonTransit(target))))
   }
   def oneN[Tok](t:Transitionable[Tok]):Transitionable[Tok] = quantified(t, Plus)
 

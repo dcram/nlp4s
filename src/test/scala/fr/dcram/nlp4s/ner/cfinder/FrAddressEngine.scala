@@ -5,13 +5,15 @@ import fr.dcram.nlp4s.tokenizer.Tokenizer
 
 class FrAddressEngine extends NerEngine[NerAddress] {
 
-  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
+  override def tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôâäëïöüÂÄËÏÖÜ]+(?:-[\wßçÇÀâàéèÉÈùÙÊêîÎûÛÔôäëïöüÂÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
-  private val streetTypes = NerResource.asMap("resource://fr/address-street-types.map", sep = '\t').map{case (k,v) => (k.lower, v)}
+  private val streetTypes = NerResource
+    .asTrie("resource://fr/address-street-types.map", sep = '\t', tokenizer = s => tokenize(s), tokPreparator = _.text.lower)
 
   private val Dash = SetMatcher("-", "–")
   private val StreetNum = RegexMatcher("""^\d+(?i)(?:bis|b|ter|a|[c-l])?([-/]\d+)?$""".r)
-  private val StreetType = SetMatcher(streetTypes.keys.toSeq:_*).lower ~> StringMatcher(".").?
+  private val StreetType = TrieMatcher(streetTypes) ~> StringMatcher(".").?
+//  private val StreetType = SetMatcher(streetTypes.keys.toSeq:_*).lower ~> StringMatcher(".").?
   private val Zip = RegexMatcher("""\b\d{5}\b""".r) | (RegexMatcher("""\b\d{2}\b""".r) ~> RegexMatcher("""\b\d{3}\b""".r))
   private val CitiWord: TxtMatcher = TxtMatcher(str => str.charAt(0).isUpper && str.lower != "cedex")
   private val City = (SetMatcher("le", "la", "les").lower | SetMatcher("saint", "st").lower).? ~> CitiWord ~> (SetMatcher("sur", "en").lower ~> CitiWord).?
@@ -22,7 +24,7 @@ class FrAddressEngine extends NerEngine[NerAddress] {
 
   override def toNameEntity(m: NerMatch): NerAddress = NerAddress(
     num = m.textOpt("num"),
-    streetType = m.textOpt("streetType").map(_.replaceAll("\\.", "").trim.lower).flatMap(streetTypes.get),
+    streetType = m.tokensOpt("streetType").map(_.toSeq).map(tokens => streetTypes.tokGet(tokens).get.head),
     streetName = m.textOpt("streetName"),
     zip = m.text("zip").replaceAll("\\s+", ""),
     city = m.text("city"),

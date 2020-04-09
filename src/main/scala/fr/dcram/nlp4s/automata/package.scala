@@ -19,16 +19,30 @@ package object automata {
     def asNamedTransition(name: String, target: State[Tok]): Transition[Tok] = new AutTransit[Tok](Some(name), this, target)
   }
 
-  case class State[Tok](id:Long,transitions:Seq[Transition[Tok]], accepting:Boolean = false)  {
+  case class State[Tok](id:Long, transitions: () => Seq[Transition[Tok]], accepting:Boolean = false)  {
     override def toString: String = s"State($accepting)"}
-  abstract class Transition[Tok](val target:State[Tok]) {
+
+
+  trait Instantiable[Tok] {
     def instantiate:TransitInst[Tok]
   }
-  abstract class TransitInst[Tok](val transit:Transition[Tok]) {
-    def targetStateInstance:StateInst[Tok] = StateInst(transit.target)
-    def _match(s:Seq[Token[Tok]]):Option[(Match[Tok], Seq[Token[Tok]])]
+  trait Transition[Tok] extends Instantiable[Tok]
+
+  trait ExtrinsicTransition[Tok] extends Transition[Tok] {
+    def _match(s:Seq[Token[Tok]]):Option[(State[Tok], Seq[Token[Tok]], Seq[Token[Tok]])]
+    def instantiate:TransitInst[Tok] = new TransitInst[Tok](this) {
+      override def _match(s: Seq[Token[Tok]]): Option[(StateInst[Tok], Match[Tok], Seq[Token[Tok]])] = ExtrinsicTransition.this._match(s)
+        .map {
+          case (state, matchedTokens,rest) => (StateInst(state), TokenMatch(matchedTokens, this), rest)
+        }
+    }
   }
-  abstract class Match[Tok](val ti: TransitInst[Tok]) {
+
+  abstract class TransitInst[Tok](val transit:Transition[Tok]) {
+    def _match(s:Seq[Token[Tok]]):Option[(StateInst[Tok], Match[Tok], Seq[Token[Tok]])]
+  }
+
+  abstract class Match[Tok](val ti:TransitInst[Tok]) {
     def rollback(s:Seq[Token[Tok]]):Seq[Token[Tok]]
   }
   trait Transitionable[Tok] {
@@ -36,11 +50,13 @@ package object automata {
   }
   trait TokenMatcher[Tok] extends Transitionable[Tok] {
     def _matches(tok:Token[Tok]):Boolean
+
     override def asTransition(target: State[Tok]): Transition[Tok] = MatcherTransit(this, target)
+
   }
   trait UserTokenMatcher[Tok] extends TokenMatcher[Tok] {
     def matches(tok:Tok):Boolean
-    override def _matches(tok: Token[Tok]): Boolean = tok match {
+    override def _matches(tok:Token[Tok]): Boolean = tok match {
       case SeqStart =>
         false
       case SeqEnd =>
@@ -53,65 +69,56 @@ package object automata {
 
 
   // instance model
-  case class EpsilonTransitInst[Tok](epsilonTransit:EpsilonTransit[Tok]) extends TransitInst[Tok](epsilonTransit) {
-    override def toString: String = "Ɛ"
-    override def _match(s: Seq[Token[Tok]]): Option[(Match[Tok], Seq[Token[Tok]])] = s match {
-      case SeqStart +: _ =>
-        None // does not matches sequence start
-      case SeqEnd +: _ =>
-        Some((EpsilonMatch(this), s))
-      case s =>
-        Some((EpsilonMatch(this), s))
-    }
-  }
-  case class MatcherTransitInst[Tok](matcherTransit: MatcherTransit[Tok]) extends TransitInst[Tok](matcherTransit) {
-    override def toString: String = matcherTransit.matcher.toString
-    override def _match(s: Seq[Token[Tok]]): Option[(Match[Tok], Seq[Token[Tok]])] = s match {
-      case tok +: tail if matcherTransit.matcher._matches(tok) => Some((TokenMatch(tok, this), tail))
-      case _ => None
-    }
-  }
   case class AutTransitInst[Tok](autTransit:AutTransit[Tok], autInst: AutInst[Tok]) extends TransitInst[Tok](autTransit) {
     override def toString: String = "Aut"
-    override def _match(s: Seq[Token[Tok]]): Option[(Match[Tok], Seq[Token[Tok]])] = nextPrefixMatch(s, autInst).map{case (restS, matchedI) => (AutMatch(this.copy(autInst = matchedI)), restS)}
+    override def _match(s: Seq[Token[Tok]]): Option[(StateInst[Tok], Match[Tok], Seq[Token[Tok]])] = nextPrefixMatch(s, autInst).map{case (restS, matchedI) => (StateInst(autTransit.target), AutMatch(this.copy(autInst = matchedI)), restS)}
   }
 
   // transition model
-  case class EpsilonTransit[Tok](override val target:State[Tok]) extends Transition[Tok](target) {
+  case class EpsilonTransit[Tok](target:State[Tok]) extends ExtrinsicTransition[Tok] {
     override def toString: String = "Ɛ"
-    override def instantiate: EpsilonTransitInst[Tok] = EpsilonTransitInst(this)
+    override def _match(s: Seq[Token[Tok]]): Option[(State[Tok], Seq[Token[Tok]], Seq[Token[Tok]])] = s match {
+      case SeqStart +: _ =>
+        None // does not matches sequence start
+      case s =>
+        Some((target, Seq.empty, s))
+
+    }
   }
-  case class AutTransit[Tok](name:Option[String], automaton:Automaton[Tok], override val target:State[Tok]) extends Transition[Tok](target) {
+
+  case class MatcherTransit[Tok](matcher:TokenMatcher[Tok], target:State[Tok]) extends ExtrinsicTransition[Tok] {
+    override def toString: String = matcher.getClass.getSimpleName
+
+    override def _match(s: Seq[Token[Tok]]): Option[(State[Tok], Seq[Token[Tok]], Seq[Token[Tok]])] = s match {
+      case tok +: tail if matcher._matches(tok) => Some((target, Seq(tok), tail))
+      case _ => None
+    }
+  }
+
+  case class AutTransit[Tok](name:Option[String], automaton:Automaton[Tok], target:State[Tok]) extends Transition[Tok] with Instantiable[Tok] {
     override def toString: String = s"${name.map(s => s"@($s)").getOrElse("")}Automaton"
     override def instantiate: AutTransitInst[Tok] = AutTransitInst(this, AutInst.fromAut(automaton))
   }
-  case class MatcherTransit[Tok](matcher:TokenMatcher[Tok], override val target:State[Tok]) extends Transition[Tok](target) {
-    override def toString: String = matcher.getClass.getSimpleName
-    override def instantiate: MatcherTransitInst[Tok] = MatcherTransitInst(this)
-  }
+
 
   // match model
-  case class EpsilonMatch[Tok](override val ti:EpsilonTransitInst[Tok]) extends Match(ti) {
-    override def toString: String = "Ɛ"
-    override def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] = s
-  }
-  case class TokenMatch[Tok](token:Token[Tok], override val ti:MatcherTransitInst[Tok]) extends Match(ti) {
-    override def toString: String = token.toString
-    override def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] = token +: s
+  case class TokenMatch[Tok](tokens:Seq[Token[Tok]], override val ti:TransitInst[Tok]) extends Match(ti) {
+    override def toString: String = tokens.toString
+    override def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] = tokens ++ s
   }
   case class AutMatch[Tok](override val ti:AutTransitInst[Tok]) extends Match(ti) {
     override def toString: String = ti.autInst.toString
     override def rollback(s: Seq[Token[Tok]]): Seq[Token[Tok]] = ti.autInst.rollback(s)
   }
 
-  case class StateInst[Tok](state:State[Tok],accepting:Boolean, rest:List[TransitInst[Tok]])  {
+  case class StateInst[Tok](state:State[Tok],accepting:Boolean, rest: List[TransitInst[Tok]])  {
     override def toString: String = s"SI(${state.id}${if (state.accepting) "✓" else ""},${rest.map(_.toString).mkString("|")})"
     def reset:StateInst[Tok] = StateInst(state)
   }
 
 
   object StateInst {
-    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions.map(_.instantiate).toList)
+    def apply[Tok](state:State[Tok]):StateInst[Tok] = new StateInst(state, state.accepting, state.transitions().toStream.map(_.instantiate).toList)
     def apply[Tok](accepting:Boolean, state:State[Tok], rest:List[TransitInst[Tok]]):StateInst[Tok] = new StateInst( state, accepting,rest)
   }
 
@@ -128,8 +135,7 @@ package object automata {
       def doTokLength(l:Int, ms:List[(StateInst[Tok], Match[Tok])]):Int = {
         ms match {
           case Nil => l
-          case (_, EpsilonMatch(_)) :: tl => doTokLength(l, tl)
-          case (_, TokenMatch(_, _)) :: tl => doTokLength(1+l, tl)
+          case (_, TokenMatch(tokens, _)) :: tl => doTokLength(tokens.length+l, tl)
           case (_, AutMatch(ti)) :: tl => doTokLength(ti.autInst.tokLength+l, tl)
           case m :: _ => throw new IllegalStateException(s"Unexpected match type: $m")
         }
@@ -137,7 +143,7 @@ package object automata {
       doTokLength(0, matchStack)
     }
 
-    private def tokenToString(stack:List[(StateInst[Tok], Match[Tok])]):String = stack match {
+    private def tokenToString[Tok](stack:List[(StateInst[Tok], Match[Tok])]):String = stack match {
       case Nil => ""
       case (_, m) :: tail =>
         val transitionlabel = m.ti match {
@@ -162,10 +168,6 @@ package object automata {
 
     def backtrack(s: Seq[Token[Tok]]): Option[(Seq[Token[Tok]], AutInst[Tok])] =  {
       val res = matchStack match {
-        case (srcSi, EpsilonMatch(_)) :: mRest =>
-          Some((s, AutInst(srcSi, mRest)))
-        case (srcSi, TokenMatch(tok, _)) :: mRest =>
-          Some((tok +: s, AutInst(srcSi, mRest)))
         case (srcSi, AutMatch(ti)) :: mRest =>
 
           ti.autInst.backtrack(s) match {
@@ -184,14 +186,11 @@ package object automata {
             case None =>
               Some((ti.autInst.rollback(s), AutInst(srcSi, mRest)))
           }
+        case (srcSi, m) :: mRest =>
+          Some((m.rollback(s), AutInst(srcSi, mRest)))
         case Nil =>
           None
-        case h :: _ => throw new IllegalStateException(s"Unexpected element: $h")
       }
-//      res match {
-//        case Some((bs, bi)) => println(s"${"  "*this.matchStack.size}$this|${current} is backtracked as $bi|${bi.current}")
-//        case None => println(s"${"  "*this.matchStack.size}could not backtrack $this")
-//      }
       res
     }
 
@@ -225,8 +224,8 @@ package object automata {
       case (s, AutInst(StateInst(state, accepting, t :: rTransit), matchStack)) =>
         val backtrackSrcSi = StateInst(state, accepting, rTransit)
         t._match(s) match {
-          case Some((m, rSeq)) =>
-            nextPrefixMatch(rSeq, AutInst(t.targetStateInstance, (backtrackSrcSi, m) :: matchStack))
+          case Some((target, m, rSeq)) =>
+            nextPrefixMatch(rSeq, AutInst(target, (backtrackSrcSi, m) :: matchStack))
           case None =>
             nextPrefixMatch(s, AutInst(backtrackSrcSi, matchStack))
         }

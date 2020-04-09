@@ -1,5 +1,6 @@
 package fr.dcram.nlp4s
 
+import fr.dcram.nlp4s.automata.Trie
 import fr.dcram.nlp4s.model.Token
 
 import scala.language.implicitConversions
@@ -16,10 +17,15 @@ package object ner {
 
   class AbstractSetMatcher(f:String => String, values: Iterable[String]) extends NerTokenMatcher {
     private val valueSet = values.map(f).toSet
+
     override def matches(tok: Token): Boolean = valueSet.contains(f(tok.text))
     def lower = new AbstractSetMatcher(_.toLowerCase, values)
   }
   case class SetMatcher(values:String*) extends AbstractSetMatcher(s => s, values)
+
+  case class TrieMatcher[K, V](trie:Trie[K, V, Token]) extends NerAutomatonMatcher {
+    override def asAutomaton: automata.Automaton[Token] = trie.asAutomaton
+  }
 
   case class StringMatcher(str:String) extends NerTokenMatcher {
     override def matches(tok: Token): Boolean = tok.text == str

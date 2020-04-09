@@ -2,7 +2,7 @@ import Dependencies._
 lazy val scala212 = "2.12.8"
 lazy val scala211 = "2.11.12"
 ThisBuild / scalaVersion     := scala212
-ThisBuild / version          := "0.1.1-SNAPSHOT"
+ThisBuild / version          := "0.1.1"
 ThisBuild / organization     := "fr.dcram"
 ThisBuild / organizationName := "dcram"
 lazy val supportedScalaVersions = List(scala212, scala211)

@@ -19,7 +19,8 @@ package object ner {
     private val valueSet = values.map(f).toSet
 
     override def matches(tok: Token): Boolean = valueSet.contains(f(tok.text))
-    def lower = new AbstractSetMatcher(_.toLowerCase, values)
+    def lower:AbstractSetMatcher = map(_.toLowerCase)
+    def map(f:String => String):AbstractSetMatcher = new AbstractSetMatcher(f, values)
   }
   case class SetMatcher(values:String*) extends AbstractSetMatcher(s => s, values)
 

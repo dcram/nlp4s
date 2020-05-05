@@ -2,8 +2,7 @@ package fr.dcram.nlp4s.ner
 
 import java.net.URI
 
-import fr.dcram.nlp4s.automata.Trie
-import fr.dcram.nlp4s.model.Token
+import fr.dcram.nlp4s.data.Trie
 
 import scala.io.Source
 

@@ -1,5 +1,6 @@
 package fr.dcram.nlp4s.automata
 
+import fr.dcram.nlp4s.data.Trie
 import org.scalatest.FunSpec
 
 class TrieSpec extends FunSpec {

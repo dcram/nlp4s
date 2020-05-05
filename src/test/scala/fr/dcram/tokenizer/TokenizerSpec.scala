@@ -1,6 +1,6 @@
 package fr.dcram.tokenizer
 
-import fr.dcram.nlp4s.tokenizer.Tokenizer
+import fr.dcram.nlp4s.ner.Tokenizer
 import org.scalatest.FunSpec
 
 class TokenizerSpec extends FunSpec {

@@ -1,4 +1,4 @@
-package fr.dcram.nlp4s.tokenizer
+package fr.dcram.nlp4s.ner
 
 import scala.util.matching.Regex
 

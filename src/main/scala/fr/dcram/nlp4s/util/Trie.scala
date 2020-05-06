@@ -1,4 +1,4 @@
-package fr.dcram.nlp4s.data
+package fr.dcram.nlp4s.util
 
 case class Trie[K,V,Tok](value:Option[V], children:Map[K, Trie[K, V, Tok]], tokPreparator:Tok => K) {
   def get(key:Iterable[K]):Option[V] = key match {

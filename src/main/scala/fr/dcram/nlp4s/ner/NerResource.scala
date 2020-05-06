@@ -2,7 +2,7 @@ package fr.dcram.nlp4s.ner
 
 import java.net.URI
 
-import fr.dcram.nlp4s.data.Trie
+import fr.dcram.nlp4s.util.Trie
 
 import scala.io.Source
 
@@ -28,9 +28,9 @@ object NerResource {
       .toMap
   }
 
-  def asTrie(uri:String, sep:Char, tokenizer:String => Iterable[Token], tokPreparator:Token => String):Trie[String, Iterable[String], Token] = {
+  def asTrie(uri:String, sep:Char, tokenizer:String => Iterable[String], tokPreparator:String => String):Trie[String, Iterable[String], String] = {
     val map = asMap(uri, sep)
-    Trie.fromEntries[String, String, Token](
+    Trie.fromEntries[String, String, String](
       entries = map.map{case(k,v) => (tokenizer(k).map(tokPreparator).toSeq, v)},
       tokPreparator = tokPreparator
     )

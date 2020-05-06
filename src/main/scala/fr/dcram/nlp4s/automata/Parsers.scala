@@ -6,8 +6,8 @@ trait Parsers[Tok, P[Tok, +_]] {
   implicit def ops[A](p:P[Tok,A]):ParserOps[A] = ParserOps(p)
 
   def succeed[A](a: A): P[Tok, A]
-  def tok(f: Tok => Boolean): P[Tok, Tok] = tokA(tok => if(f(tok)) Some(tok) else None)
-  def tokA[A](f: Tok => Option[A]): P[Tok, A]
+  def tok(f: Tok => Boolean): P[Tok, Tok] = fromOpt(tok => if(f(tok)) Some(tok) else None)
+  def fromOpt[A](f: Tok => Option[A]): P[Tok, A]
   def parse[A](p:P[Tok, A])(seq:Seq[Tok]):Option[A]
   def scan[A](p:P[Tok, A])(seq:Seq[Tok]):Stream[A]
   def ~[A,B](p1:P[Tok, A], p2: => P[Tok, B]): P[Tok, (A,B)]

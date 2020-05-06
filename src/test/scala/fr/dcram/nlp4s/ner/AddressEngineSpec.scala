@@ -9,40 +9,60 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
   val tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
 
   private val streetTypes = NerResource.asMap("resource://fr/street-types.map", sep = ',')
+  object Ref extends TokenParsers
 
   case class Address(
                       num:Option[String],
                       streetType:Option[String],
                       streetName:Option[String],
                       zip:String,
-                      city:String,
-                      override val begin:Int,
-                      override val end:Int,
-                      override val text:String) extends Annotation
+                      city:String)
 
+
+  def zip(P:TokenParsers):TokenParser[String] = {
+    import P._
+    digit(5) or (digit(2) ~ digit(3)).map{case (s1,s2) => s"$s1$s2" }
+  }
 
   def addressParser(P:TokenParsers):TokenParser[Address] = {
     import P._
 
     val streetType:TokenParser[String] = (inMap(streetTypes) ~ str(".").opt).map(_._1)
-    val zip:TokenParser[String] = digit(5) or (digit(2) ~ digit(3)).map{case (a,b) => a+b}
-    val city:TokenParser[String] = $(_.charAt(0).isUpper)
+    val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = inSet(Set(",", "-"))
     val streetName:TokenParser[String] = reg("""^[\w-']+$""".r).map(_.group(0))
 
-    seq(digit, streetType, streetName.mn(1,8), sep.opt, zip, city).map {
-      case (num, stype, sname, _, zip, city) => Address(
-        Some(num),
-        Some(stype),
-        Some(sname.mkString(" ")),
-        zip,
-        city,
-        0,0,""
-      )
-    }
+    $(digit, streetType, streetName.mn(1,8), sep.opt, zip(P), city)
+      .map {
+        case (num, stype, sname, _, zip, city) => Address(
+          Some(num),
+          Some(stype),
+          Some(sname.mkString(" ")),
+          zip,
+          city
+        )
+      }
   }
 
   describe(classOf[TokenParsers].toString) {
+
+    describe("Preservation of offsets") {
+      val sent = "10 rue Paul Blanchard , 44 000 Nantes"
+      val tokens = tokenizer.tokenize(sent)
+      val token:Token[Address] = Ref.scan(addressParser(Ref))(tokens).head
+
+      describe("full sentence") {
+        it("begin=0"){assert(token.begin == 0)}
+        it(s"end=37"){assert(token.end == 37)}
+      }
+
+      describe("zip") {
+        val token:Token[String] = Ref.scan(zip(Ref))(tokens).head
+        it("begin=24"){assert(token.begin == 24)}
+        it(s"end=30"){assert(token.end == 30)}
+      }
+    }
+
     Seq(
       ("10 rue Paul Blanchard , 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
       ("10 rue Paul Blanchard 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
@@ -53,16 +73,15 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
       case (sentence, Some(address@(num, streetType, streetName, zip, city))) =>
         describe(sentence) {
           val tokens = tokenizer.tokenize(sentence)
-          object Ref extends TokenParsers
-          val addresses:List[Address] = Ref.scan(addressParser(Ref))(tokens).toList
+          val addresses:List[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).toList
           it("should extract one address") {assert(addresses.length == 1)}
           addresses.headOption.foreach{
             addr =>
-              it(s"should extract num ${num}") {assert(addr.num == num)}
-              it(s"should extract streetType ${streetType}") {assert(addr.streetType == streetType)}
-              it(s"should extract streetName ${streetName}") {assert(addr.streetName == streetName)}
-              it(s"should extract zip ${zip}") {assert(addr.zip == zip)}
-              it(s"should extract city ${city}") {assert(addr.city == city)}
+              it(s"should extract num ${num}") {assert(addr.obj.num == num)}
+              it(s"should extract streetType ${streetType}") {assert(addr.obj.streetType == streetType)}
+              it(s"should extract streetName ${streetName}") {assert(addr.obj.streetName == streetName)}
+              it(s"should extract zip ${zip}") {assert(addr.obj.zip == zip)}
+              it(s"should extract city ${city}") {assert(addr.obj.city == city)}
 
           }
         }
@@ -78,14 +97,13 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
       val e = System.currentTimeMillis()
       e-s
     }
-    object Ref extends TokenParsers
 
     it("bm1") {
       val tokens = tokenizer.tokenize("10 rue Paul Blanchard , 44000 Nantes")
 
       for(n <- Seq(1,10,100,1000,10000,100000)) {
         val duration = bm(n, () => {
-          val addresses:Option[Address] = Ref.scan(addressParser(Ref))(tokens).headOption
+          val addresses:Option[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).headOption
         })
         println(f"$n%8d times -> $duration%d ms")
       }
@@ -99,7 +117,7 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
       val tokens = tokenizer.tokenize(sent10000)
 
       logger.info(s"scanning addresses")
-      val addresses:List[Address] = Ref.scan(addressParser(Ref))(tokens).toList
+      val addresses:List[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).toList
       logger.info(s"scanned ${addresses.size} addresses")
       assert(addresses.size == n)
 

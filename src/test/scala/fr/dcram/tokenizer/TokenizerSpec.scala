@@ -21,13 +21,13 @@ class TokenizerSpec extends FunSpec {
         ).foreach {
           case (string, tokens) =>
             it(s"should tokenize ${string}") {
-              assert(tokenizer.tokenize(string).map(tok => (tok.text, tok.begin, tok.end)).toSeq == tokens)
+              assert(tokenizer.tokenize(string).map(tok => (tok.obj, tok.begin, tok.end)).toSeq == tokens)
           }
         }
       }
 
       def assertTok(string:String, expTokens: Iterable[String])(implicit tokenizer:Tokenizer):Unit = {
-        assert(tokenizer.tokenize(string).map(_.text).toIterable == expTokens)
+        assert(tokenizer.tokenize(string).map(_.obj).toIterable == expTokens)
       }
       describe("fr") {
         implicit val tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)

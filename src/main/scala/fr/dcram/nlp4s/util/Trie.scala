@@ -1,10 +1,10 @@
 package fr.dcram.nlp4s.util
 
-case class Trie[K,V,Tok](value:Option[V], children:Map[K, Trie[K, V, Tok]], tokPreparator:Tok => K) {
-  def get(key:Iterable[K]):Option[V] = key match {
+case class Trie[K,V](value:Option[V], children:Map[K, Trie[K, V]]) {
+  def getValue(key:Iterable[K]):Option[V] = key match {
     case k :: tail => children.get(k) match {
       case Some(childTrie) =>
-        childTrie.get(tail)
+        childTrie.getValue(tail)
       case None =>
         None
     }
@@ -12,21 +12,20 @@ case class Trie[K,V,Tok](value:Option[V], children:Map[K, Trie[K, V, Tok]], tokP
       value
   }
 
-  def tokGet(key:Iterable[Tok]):Option[V] = get(key.map(tokPreparator))
+  def getChild(k:K):Option[Trie[K,V]] = children.get(k)
 
 }
 
 object Trie {
 
-  def fromEntries[K,V,Tok](entries:Iterable[(Seq[K], V)], tokPreparator:Tok => K):Trie[K,Iterable[V], Tok] = {
-    val (empties, nonEmpties) = entries.partition(_._1.isEmpty)
+  def fromEntries[K,V](entries:Iterable[(Seq[K], V)]):Trie[K,V] = {
+    val (values, nonEmpties) = entries.partition(_._1.isEmpty)
     new Trie(
-      value = if(empties.isEmpty) None else Some(empties.map(_._2)),
+      value = values.map(_._2).headOption,
       children = nonEmpties
         .map{case (k,v) => (k.head, k.tail, v)}
         .groupBy(_._1)
-        .mapValues(list => fromEntries(list.map{case (_, seq, value) => (seq, value)}, tokPreparator)),
-      tokPreparator = tokPreparator
+        .mapValues(list => fromEntries(list.map{case (_, seq, value) => (seq, value)}))
     )
   }
 }

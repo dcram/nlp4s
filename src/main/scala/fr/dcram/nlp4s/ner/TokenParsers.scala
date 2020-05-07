@@ -2,6 +2,9 @@ package fr.dcram.nlp4s.ner
 
 import fr.dcram.nlp4s.parse.Parsers
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
+import fr.dcram.nlp4s.ner.Token.MergeApplicative
+import fr.dcram.nlp4s.parse.ParserTypes.Result
+import fr.dcram.nlp4s.util.Trie
 
 import scala.util.matching.Regex
 
@@ -14,8 +17,31 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
   def fromOptTok[B](f:String => Option[B]):TokenParser[B] = fromOpt(t => f(t.obj).map(b => t.copy(obj = b)))
   def %[B](f:String => Option[B]):TokenParser[B] = fromOptTok(f)
   def ###[B](f:String => Boolean):TokenParser[String] = fromOptTok(str => if(f(str)) Some(str) else None)
+
   def inSet(strings:Set[String]):TokenParser[String] = ###(strings.contains)
   def inMap[V](map:Map[String, V]):TokenParser[V] = fromOptTok(map.get)
+
+  def inTrie[V](trie:Trie[String, V]):TokenParser[(V, List[String])] = {
+    def doInTrie(trie:Trie[String, V], tokens:List[Token[String]]): TokenParser[(V, List[String])] = or(
+      s => s match {
+        case tok +: tail => trie.getChild(tok.obj) match {
+          case Some(child) => doInTrie(child, tok :: tokens)(tail)
+          case None => Stream.empty
+        }
+        case _ => Stream.empty
+      },
+      s => trie.value match {
+        case Some(v) =>
+          val tok = MergeApplicative.sequence(tokens.reverse).map(tokens => (v,tokens))
+          Stream(Result(s, tok))
+        case None => Stream.empty
+      }
+    )
+
+    doInTrie(trie, List.empty)
+
+  }
+
   implicit def reg(r:Regex):TokenParser[Regex.Match] = fromOptTok(r.findFirstMatchIn)
   implicit def str(str:String):TokenParser[String] = fromOptTok(t => if(t == str) Some(str) else None)
   implicit def ops[A1,A](p:A1)(implicit f: A1 => TokenParser[A]):TokenParserOps[A] = TokenParserOps(p)

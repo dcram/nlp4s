@@ -7,10 +7,11 @@ import org.scalatest.FunSpec
 
 import scala.language.implicitConversions
 
-class AddressEngineSpec extends FunSpec with LazyLogging {
+class TokenParsersSpec extends FunSpec with LazyLogging {
   val tokenizer = regexTokenizer("""[(){}.,!?;:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
 
-  private val streetTypes = NerResource.asMap("resource://fr/street-types.map", sep = ',')
+  private val streetTypes = NerResource.asTrie("resource://fr/street-types.trie", sep = ',', tokenizer = tokenizer)
+
   object Ref extends TokenParsers
 
   case class Address(
@@ -29,7 +30,7 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
   def addressParser(P:TokenParsers):TokenParser[Address] = {
     import P._
 
-    val streetType:TokenParser[String] = (inMap(streetTypes) ~ ".".opt).map(_._1)
+    val streetType:TokenParser[String] = (inTrie(streetTypes) ~ ".".opt).map(_._1._1)
     val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = inSet(Set(",", "-"))
     val streetName:TokenParser[String] = """^[\w-']+$""".r.map(_.group(0))
@@ -70,7 +71,8 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
       ("10 rue Paul Blanchard 44000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
       ("10 av Paul Blanchard 44000 Nantes", Some(Some("10"), Some("avenue"), Some("Paul Blanchard"), "44000", "Nantes")),
       ("10 av. Paul Blanchard 44000 Nantes", Some(Some("10"), Some("avenue"), Some("Paul Blanchard"), "44000", "Nantes")),
-      ("10 rue Paul Blanchard 44 000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes"))
+      ("10 rue Paul Blanchard 44 000 Nantes", Some(Some("10"), Some("rue"), Some("Paul Blanchard"), "44000", "Nantes")),
+      ("10 rond point de Paris 44 000 Nantes", Some(Some("10"), Some("RP"), Some("de Paris"), "44000", "Nantes"))
     ).foreach {
       case (sentence, Some(address@(num, streetType, streetName, zip, city))) =>
         describe(sentence) {

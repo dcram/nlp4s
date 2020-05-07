@@ -1,14 +1,40 @@
 package fr.dcram.tokenizer
 
-import fr.dcram.nlp4s.ner.Tokenizer
+import fr.dcram.nlp4s.ner._
 import org.scalatest.FunSpec
 
 class TokenizerSpec extends FunSpec {
+  val wordTokenizer = regexTokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
-  describe(classOf[Tokenizer].toString) {
-    describe("tokenize") {
+  describe(classOf[Tokenizers].toString) {
+    describe("chain") {
+      val sentenceTokenizer = regexTokenizer("""[^\.]*\.""".r)
+      val sent1 = "Bonjour Toto."
+      val sent2 = "Comment ça va."
+      val sentence = s"$sent1 $sent2"
+      import TokenizerRef._
+      val chainedTokenizer = sentenceTokenizer.chain(wordTokenizer)
+
+      it(s"""should tokenizer sentences in "$sentence"""") {
+        assert(sentenceTokenizer(sentence) == Stream(Token(0,13,sent1),Token(13,28,s" $sent2")))
+      }
+      it(s"""should tokenizer words "${sentence}"""") {
+        assert(wordTokenizer(sent2) == Stream(Token(0,7,"Comment"), Token(8,10,"ça"), Token(11,13,"va"), Token(13,14,".")))
+      }
+      it(s"""should tokenizer words in chain in sentence \"${sentence}\"""") {
+        assert(chainedTokenizer(sentence) == Stream(
+          Token(0,7,"Bonjour"),
+          Token(8,12,"Toto"),
+          Token(12,13,"."),
+          Token(14,21,"Comment"),
+          Token(22,24,"ça"),
+          Token(25,27,"va"),
+          Token(27,28,"."),
+        ))
+      }
+    }
+    describe("regexTokenizer") {
       describe("indexing") {
-        implicit val tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
         Seq(
           (
             "Bonjour Damien",
@@ -21,16 +47,16 @@ class TokenizerSpec extends FunSpec {
         ).foreach {
           case (string, tokens) =>
             it(s"should tokenize ${string}") {
-              assert(tokenizer.tokenize(string).map(tok => (tok.obj, tok.begin, tok.end)).toSeq == tokens)
+              assert(wordTokenizer(string).map(tok => (tok.obj, tok.begin, tok.end)).toSeq == tokens)
           }
         }
       }
 
-      def assertTok(string:String, expTokens: Iterable[String])(implicit tokenizer:Tokenizer):Unit = {
-        assert(tokenizer.tokenize(string).map(_.obj).toIterable == expTokens)
+      def assertTok(tokenizer:StringTokenizer)(string:String, expTokens: Iterable[String]):Unit = {
+        assert(tokenizer(string).map(_.obj) == expTokens)
       }
       describe("fr") {
-        implicit val tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
+        implicit val tokenizer = regexTokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
         Seq(
           (
             "Bonjour Damien",
@@ -40,10 +66,10 @@ class TokenizerSpec extends FunSpec {
             "C'est top! Bonjour, Damien.",
             Seq("C'", "est", "top", "!", "Bonjour", ",", "Damien", ".")
           )
-        ).foreach { case (string, tokens) => it(s"should tokenize ${string}") {assertTok(string, tokens)}}
+        ).foreach { case (string, tokens) => it(s"should tokenize ${string}") {assertTok(tokenizer)(string, tokens)}}
       }
       describe("uk") {
-        implicit val  tokenizer: Tokenizer = Tokenizer("""[\(\)\{\}\.,!\?;\:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
+        implicit val tokenizer = regexTokenizer("""[\(\)\{\}\.,!\?;\:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
 
         Seq(
           (
@@ -54,7 +80,7 @@ class TokenizerSpec extends FunSpec {
             "That is John's",
             Seq("That", "is", "John's")
           )
-        ).foreach { case (string, tokens) => it(s"should tokenize ${string}") {assertTok(string, tokens)}}
+        ).foreach { case (string, tokens) => it(s"should tokenize ${string}") {assertTok(tokenizer)(string, tokens)}}
       }
     }
   }

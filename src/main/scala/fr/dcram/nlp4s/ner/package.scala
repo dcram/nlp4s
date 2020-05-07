@@ -4,10 +4,15 @@ import fr.dcram.nlp4s.automata.AutomataReferenceTypes
 
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.matching.Regex
 
 package object ner {
 
   type TokenParser[+A] = AutomataReferenceTypes.Parser[Token[String], Token[A]]
+  type StringTokenizer = String => Stream[Token[String]]
+
+  object TokenizerRef extends Tokenizers
+  def regexTokenizer(regex:Regex):StringTokenizer = string => regex.findAllMatchIn(string).map(m => Token(m.start, m.end, m.group(0))).toStream
 
   private[this] lazy val AccentsFromChars = "ßÀÁÂÃÄÅàáâãäåĀāĂăĄąÇçĆćĈĉĊċČčÐðĎďĐđÈÉÊËèéêëĒēĔĕĖėĘęĚěĜĝĞğĠġĢ‌​ģĤĥĦħÌÍÎÏìíîïĨĩĪīĬĭĮ‌​įİıĴĵĶķĸĹĺĻļĽľĿŀŁłÑñ‌​ŃńŅņŇňŉŊŋÒÓÔÕÖØòóôõö‌​øŌōŎŏŐőŔŕŖŗŘřŚśŜŝŞşŠ‌​šȘșſŢţŤťŦŧȚțÙÚÛÜùúûü‌​ŨũŪūŬŭŮůŰűŲųŴŵÝýÿŶŷŸ‌​ŹźŻżŽž"
   private[this] lazy val AccentsToChars   = "sAAAAAAaaaaaaAaAaAaCcCcCcCcCcDdDdDdEEEEeeeeEeEeEeEeEeGgGgGgG‌​gHhHhIIIIiiiiIiIiIiI‌​iIiJjKkkLlLlLlLlLlNn‌​NnNnNnnNnOOOOOOooooo‌​oOoOoOoRrRrRrSsSsSsS‌​sSssTtTtTtTtUUUUuuuu‌​UuUuUuUuUuUuWwYyyYyY‌​ZzZzZz"

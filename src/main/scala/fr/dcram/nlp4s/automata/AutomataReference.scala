@@ -19,6 +19,8 @@ trait AutomataReference[Tok] extends Parsers[Tok, Parser] {
     case _ => Stream.empty
   }
 
+  override def filter[A](p: Parser[Tok, A])(f: A => Boolean): Parser[Tok, A] = seq => p(seq).filter(r => f(r.m))
+
   override def flatMap[A, B](p: Parser[Tok, A])(f: A => Parser[Tok, B]): Parser[Tok, B] = seq => {
     p(seq).foldLeft(Stream.empty[Result[Tok, B]]){case (acc, Result(tail, a)) => acc #::: f(a)(tail)}
   }

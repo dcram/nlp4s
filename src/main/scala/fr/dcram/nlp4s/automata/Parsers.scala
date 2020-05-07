@@ -12,6 +12,7 @@ trait Parsers[Tok, P[Tok, +_]] {
   def scan[A](p:P[Tok, A])(seq:Seq[Tok]):Stream[A]
   def ~[A,B](p1:P[Tok, A], p2: => P[Tok, B]): P[Tok, (A,B)]
   def map[A,B](p:P[Tok, A])(f: A => B): P[Tok, B]
+  def filter[A](p:P[Tok, A])(f: A => Boolean): P[Tok, A]
   def flatMap[A,B](p:P[Tok, A])(f: A => P[Tok, B]): P[Tok, B]
   def or[A,B>:A](p1:P[Tok, A], p2: => P[Tok, B]): P[Tok, B]
   def opt[A](p:P[Tok, A]): P[Tok, Option[A]] = p.map(Some.apply) or succeed(None)
@@ -33,6 +34,7 @@ trait Parsers[Tok, P[Tok, +_]] {
     def parse(seq:Seq[Tok]):Option[A] = pp.parse(p)(seq)
     def scan(seq:Seq[Tok]):Stream[A] = pp.scan(p)(seq)
     def map[B](f: A => B): P[Tok, B] = pp.map(p)(f)
+    def filter(f: A => Boolean): P[Tok, A] = pp.filter(p)(f)
     def or[B>:A](p2:P[Tok, B]): P[Tok, B] = pp.or(p,p2)
     def ~[B](p2:P[Tok, B]): P[Tok, (A,B)] = pp.~(p,p2)
     def rep(n:Int): P[Tok, List[A]] = pp.rep(n)(p)

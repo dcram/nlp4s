@@ -1,4 +1,4 @@
-package fr.dcram.nlp4s.automata
+package fr.dcram.nlp4s.spec
 
 import fr.dcram.nlp4s.util.Trie
 import org.scalatest.FunSpec

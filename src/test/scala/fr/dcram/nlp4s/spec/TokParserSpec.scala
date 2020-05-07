@@ -1,7 +1,8 @@
-package fr.dcram.nlp4s.automata
+package fr.dcram.nlp4s.spec
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import fr.dcram.nlp4s.automata.{AutomataReference, AutomataReferenceTypes}
 import org.scalatest.FunSpec
 
 class TokParserSpec extends FunSpec {

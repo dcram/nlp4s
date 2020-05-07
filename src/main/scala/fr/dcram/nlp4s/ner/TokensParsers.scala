@@ -1,6 +1,7 @@
 package fr.dcram.nlp4s.ner
 
 import fr.dcram.nlp4s.automata.AutomataReference
+import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 
 import scala.util.matching.Regex
 

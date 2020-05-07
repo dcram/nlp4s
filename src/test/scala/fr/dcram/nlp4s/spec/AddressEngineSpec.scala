@@ -1,6 +1,8 @@
-package fr.dcram.nlp4s.ner
+package fr.dcram.nlp4s.spec
 
 import com.typesafe.scalalogging.LazyLogging
+import fr.dcram.nlp4s.ner.NerTypes.TokenParser
+import fr.dcram.nlp4s.ner.{NerResource, Token, TokenParsers, regexTokenizer}
 import org.scalatest.FunSpec
 
 import scala.language.implicitConversions

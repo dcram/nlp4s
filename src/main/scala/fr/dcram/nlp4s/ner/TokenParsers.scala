@@ -1,12 +1,12 @@
 package fr.dcram.nlp4s.ner
 
-import fr.dcram.nlp4s.automata.AutomataReference
+import fr.dcram.nlp4s.parse.Parsers
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 
 import scala.util.matching.Regex
 
 
-trait TokenParsers extends AutomataReference[Token[String]] with SeqArities {
+trait TokenParsers extends Parsers[Token[String]] with SeqArities {
   ref =>
 
   def digit:TokenParser[String] = reg("""^\d+$""".r).map(_.group(0))
@@ -33,14 +33,14 @@ trait TokenParsers extends AutomataReference[Token[String]] with SeqArities {
     def scan(seq:Seq[Token[String]]):Stream[Token[A]] = ref.scan(p)(seq)
     def map[B](f: A => B): TokenParser[B] = ref.map(p)(_.map(f))
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
-    def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.~(p,p2)){case (a,b) => TokenApp.product(a,b)}
+    def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}
 
   }
 
 }
 
 trait SeqArities {
-  this:AutomataReference[Token[String]] =>
+  this:Parsers[Token[String]] =>
   private[this] val TokenApp = Token.MergeApplicative
 
   def $[A1](p1:TokenParser[A1]):TokenParser[A1] = p1

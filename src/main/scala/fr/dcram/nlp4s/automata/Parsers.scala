@@ -27,6 +27,7 @@ trait Parsers[Tok, P[Tok, +_]] {
   def plus[A](p:P[Tok, A]): P[Tok, List[A]] = (p ~ star(p)).map{case (a, list) => a :: list}
   def atMostN[A](n:Int)(p:P[Tok, A]): P[Tok, List[A]] = p.opt.rep(n).map(_.flatten)
   def atLeastN[A](n:Int)(p:P[Tok, A]): P[Tok, List[A]] = (p.rep(n) ~ p.*).map{case (l1, l2) => l1 ++ l2}
+
   case class ParserOps[A](p:P[Tok,A]) {
     def parse(seq:Seq[Tok]):Option[A] = pp.parse(p)(seq)
     def scan(seq:Seq[Tok]):Stream[A] = pp.scan(p)(seq)

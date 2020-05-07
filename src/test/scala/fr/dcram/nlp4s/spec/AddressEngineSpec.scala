@@ -29,10 +29,10 @@ class AddressEngineSpec extends FunSpec with LazyLogging {
   def addressParser(P:TokenParsers):TokenParser[Address] = {
     import P._
 
-    val streetType:TokenParser[String] = (inMap(streetTypes) ~ str(".").opt).map(_._1)
+    val streetType:TokenParser[String] = (inMap(streetTypes) ~ ".".opt).map(_._1)
     val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = inSet(Set(",", "-"))
-    val streetName:TokenParser[String] = reg("""^[\w-']+$""".r).map(_.group(0))
+    val streetName:TokenParser[String] = """^[\w-']+$""".r.map(_.group(0))
 
     $(digit, streetType, streetName.mn(1,8), sep.opt, zip(P), city)
       .map {

@@ -2,15 +2,15 @@ package fr.dcram.nlp4s.spec
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import fr.dcram.nlp4s.parse.ParserTypes.Parser
-import fr.dcram.nlp4s.parse.Parsers
+import fr.dcram.nlp4s.parse.BacktrackingParserTypes.Parser
+import fr.dcram.nlp4s.parse.BacktrackingParsers
 import org.scalatest.FunSpec
 
-class ParsersSpec extends FunSpec {
+class BacktrackingParsersSpec extends FunSpec {
 
-  describe(classOf[Parsers[Char]].toString) {
+  describe(classOf[BacktrackingParsers[Char]].toString) {
 
-    object CharReference extends Parsers[Char]
+    object CharReference extends BacktrackingParsers[Char]
     import CharReference._
 
     def set(str:String):Parser[Char, Char] = {
@@ -30,7 +30,7 @@ class ParsersSpec extends FunSpec {
             (parserA.endoPrepare(_.toLower), "A", Some('a'), List('A')),
           ).zipWithIndex.foreach {
             case ((parser, str, m, tokens), i) =>
-              it(s"${i}a. should extract $m from sequence $str") {assert(parser.parse(str).map(_.m) == m)}
+              it(s"${i}a. should extract $m from sequence $str") {assert(parser.parse(str).map(_.data) == m)}
               it(s"${i}b. matched tokens in sequence $str should be ${tokens}") {assert(parser.parse(str).map(_.tokens).getOrElse(List.empty) == tokens)}
           }
 
@@ -48,7 +48,7 @@ class ParsersSpec extends FunSpec {
             (digitEven, "2", Some(2)),
           ).zipWithIndex.foreach {
             case ((parser, str, m), i) =>
-              it(s"$i. should extract $m from sequence $str") {assert(parser.parse(str).map(_.m) == m)}
+              it(s"$i. should extract $m from sequence $str") {assert(parser.parse(str).map(_.data) == m)}
           }
 
         }
@@ -60,7 +60,7 @@ class ParsersSpec extends FunSpec {
           val a:Parser[Char, Char] = tok{c => aCnt.incrementAndGet(); c == 'a'}
           val b:Parser[Char, Char] = tok{c => bCnt.incrementAndGet(); c == 'b'}
 
-          it("result should be 'a'") {assert((a or b).parse("a").map(_.m) == Some('a'))}
+          it("result should be 'a'") {assert((a or b).parse("a").map(_.data) == Some('a'))}
           it("parser a should have been invoked once") {assert(aCnt.intValue() == 1)}
           it("parser b should have been invoked zero time") {assert(bCnt.intValue() == 0)}
         }
@@ -89,7 +89,7 @@ class ParsersSpec extends FunSpec {
         ).zipWithIndex.foreach{
           case ((string, parser, result), i) =>
             it(s"$i. should extract $result from string $string") {
-              assert(parser.parse(string.toCharArray.toSeq).map(_.m) == result)
+              assert(parser.parse(string.toCharArray.toSeq).map(_.data) == result)
             }
         }
       }

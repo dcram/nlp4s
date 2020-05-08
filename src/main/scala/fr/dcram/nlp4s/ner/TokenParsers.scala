@@ -2,14 +2,14 @@ package fr.dcram.nlp4s.ner
 
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 import fr.dcram.nlp4s.ner.Token.MergeApplicative
-import fr.dcram.nlp4s.parse.ParserTypes.{MatchData, Result}
-import fr.dcram.nlp4s.parse.Parsers
+import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Result}
+import fr.dcram.nlp4s.parse.BacktrackingParsers
 import fr.dcram.nlp4s.util.Trie
 
 import scala.util.matching.Regex
 
 
-trait TokenParsers extends Parsers[Token[String]] with SeqArities {
+trait TokenParsers extends BacktrackingParsers[Token[String]] with SeqArities {
   ref =>
 
   def digit:TokenParser[String] = reg("""^\d+$""".r).map(_.group(0))
@@ -71,7 +71,7 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
 }
 
 trait SeqArities {
-  this:Parsers[Token[String]] =>
+  this:BacktrackingParsers[Token[String]] =>
   private[this] val TokenApp = Token.MergeApplicative
 
   def $[A1](p1:TokenParser[A1]):TokenParser[A1] = p1

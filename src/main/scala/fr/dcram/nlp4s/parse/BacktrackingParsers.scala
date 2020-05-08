@@ -1,8 +1,8 @@
 package fr.dcram.nlp4s.parse
 
-import fr.dcram.nlp4s.parse.ParserTypes.{MatchData, Parser, Result}
+import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Parser, Result}
 
-trait Parsers[Tok] extends ParsersAutomataAlgebra[({type f[+x] = Parser[Tok, x]})#f] {
+trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok, x]})#f] {
   self =>
 
   override def succeed[A](a: A): Parser[Tok, A] = seq => Stream(Result(seq, MatchData(a, List.empty)))
@@ -41,7 +41,7 @@ trait Parsers[Tok] extends ParsersAutomataAlgebra[({type f[+x] = Parser[Tok, x]}
     case _ => Stream.empty
   }
 
-  def filter[A](p: Parser[Tok, A])(f: A => Boolean): Parser[Tok, A] = seq => p(seq).filter(r => f(r.m.m))
+  def filter[A](p: Parser[Tok, A])(f: A => Boolean): Parser[Tok, A] = seq => p(seq).filter(r => f(r.m.data))
 
 
   def zip[A,Tok1](p: Parser[Tok, A]):Parser[(Tok, Tok1), A] = ???

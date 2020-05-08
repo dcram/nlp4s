@@ -1,6 +1,6 @@
 package fr.dcram.nlp4s.parse
 
-trait ParsersAutomataAlgebra[P[+_]] {
+trait ParsersAlgebra[P[+_]] {
   self =>
 
   implicit def ops[A](p:P[A]):Ops[A] = Ops(p)

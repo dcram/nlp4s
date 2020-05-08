@@ -22,6 +22,20 @@ class ParsersSpec extends FunSpec {
     val parserB:Parser[Char, Char] = tok(_ == 'b')
 
     describe("parse") {
+        describe("prepare") {
+          Seq(
+            (parserA, "a", Some('a'), List('a')),
+            (parserA, "A", None, List.empty[Char]),
+            (parserA.endoPrepare(_.toLower), "a", Some('a'), List('a')),
+            (parserA.endoPrepare(_.toLower), "A", Some('a'), List('A')),
+          ).zipWithIndex.foreach {
+            case ((parser, str, m, tokens), i) =>
+              it(s"${i}a. should extract $m from sequence $str") {assert(parser.parse(str).map(_.m) == m)}
+              it(s"${i}b. matched tokens in sequence $str should be ${tokens}") {assert(parser.parse(str).map(_.tokens).getOrElse(List.empty) == tokens)}
+          }
+
+        }
+
         describe("filter") {
           val digit:Parser[Char, Int] = tok(_.isDigit).map(_.toString.toInt)
           val digitEven:Parser[Char, Int] = digit.filter(_ % 2 == 0)
@@ -34,7 +48,7 @@ class ParsersSpec extends FunSpec {
             (digitEven, "2", Some(2)),
           ).zipWithIndex.foreach {
             case ((parser, str, m), i) =>
-              it(s"$i. should extract $m from sequence $str") {assert(parser.parse(str) == m)}
+              it(s"$i. should extract $m from sequence $str") {assert(parser.parse(str).map(_.m) == m)}
           }
 
         }
@@ -46,7 +60,7 @@ class ParsersSpec extends FunSpec {
           val a:Parser[Char, Char] = tok{c => aCnt.incrementAndGet(); c == 'a'}
           val b:Parser[Char, Char] = tok{c => bCnt.incrementAndGet(); c == 'b'}
 
-          it("result should be 'a'") {assert((a or b).parse("a") == Some('a'))}
+          it("result should be 'a'") {assert((a or b).parse("a").map(_.m) == Some('a'))}
           it("parser a should have been invoked once") {assert(aCnt.intValue() == 1)}
           it("parser b should have been invoked zero time") {assert(bCnt.intValue() == 0)}
         }
@@ -75,7 +89,7 @@ class ParsersSpec extends FunSpec {
         ).zipWithIndex.foreach{
           case ((string, parser, result), i) =>
             it(s"$i. should extract $result from string $string") {
-              assert(parser.parse(string.toCharArray.toSeq) == result)
+              assert(parser.parse(string.toCharArray.toSeq).map(_.m) == result)
             }
         }
       }

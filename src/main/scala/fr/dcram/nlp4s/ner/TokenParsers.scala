@@ -1,9 +1,9 @@
 package fr.dcram.nlp4s.ner
 
-import fr.dcram.nlp4s.parse.Parsers
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 import fr.dcram.nlp4s.ner.Token.MergeApplicative
-import fr.dcram.nlp4s.parse.ParserTypes.Result
+import fr.dcram.nlp4s.parse.ParserTypes.{MatchData, Result}
+import fr.dcram.nlp4s.parse.Parsers
 import fr.dcram.nlp4s.util.Trie
 
 import scala.util.matching.Regex
@@ -21,8 +21,8 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
   def inSet(strings:Set[String]):TokenParser[String] = ###(strings.contains)
   def inMap[V](map:Map[String, V]):TokenParser[V] = fromOptTok(map.get)
 
-  def inTrie[V](trie:Trie[String, V]):TokenParser[(V, List[String])] = {
-    def doInTrie(trie:Trie[String, V], tokens:List[Token[String]]): TokenParser[(V, List[String])] = or(
+  def inTrie[V](trie:Trie[String, V]):TokenParser[V] = {
+    def doInTrie(trie:Trie[String, V], tokens:List[Token[String]]): TokenParser[V] = or(
       s => s match {
         case tok +: tail => trie.getChild(tok.obj) match {
           case Some(child) => doInTrie(child, tok :: tokens)(tail)
@@ -33,7 +33,7 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
       s => trie.value match {
         case Some(v) =>
           val tok = MergeApplicative.sequence(tokens.reverse).map(tokens => (v,tokens))
-          Stream(Result(s, tok))
+          Stream(Result(s, MatchData(tok.copy(obj = v), tokens.reverse)))
         case None => Stream.empty
       }
     )
@@ -41,6 +41,7 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
     doInTrie(trie, List.empty)
 
   }
+
 
   implicit def reg(r:Regex):TokenParser[Regex.Match] = fromOptTok(r.findFirstMatchIn)
   implicit def str(str:String):TokenParser[String] = fromOptTok(t => if(t == str) Some(str) else None)
@@ -56,11 +57,15 @@ trait TokenParsers extends Parsers[Token[String]] with SeqArities {
     def +():TokenParser[List[A]] = ref.map(ref.plus(p))(TokenApp.sequence)
     def *():TokenParser[List[A]] = ref.map(ref.star(p))(TokenApp.sequence)
     def opt:TokenParser[Option[A]] = ref.map(ref.opt(p))(TokenApp.option)
-    def scan(seq:Seq[Token[String]]):Stream[Token[A]] = ref.scan(p)(seq)
+    def scan(seq:Seq[Token[String]]):Stream[MatchData[Token[String],Token[A]]] = ref.scan(p)(seq)
     def map[B](f: A => B): TokenParser[B] = ref.map(p)(_.map(f))
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
     def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}
 
+    def prepareStr(f:String => String): TokenParser[A] = p.prepare(token => token.map(f))
+    def ascii(): TokenParser[A] = prepareStr(_.ascii)
+    def upper(): TokenParser[A] = prepareStr(_.upper)
+    def lower(): TokenParser[A] = prepareStr(_.lower)
   }
 
 }

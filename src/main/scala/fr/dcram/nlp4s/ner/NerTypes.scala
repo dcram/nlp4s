@@ -6,4 +6,5 @@ object NerTypes {
   type TokenParser[+A] = Parser[Token[String], Token[A]]
   type StringTokenizer = String => Stream[Token[String]]
 
+
 }

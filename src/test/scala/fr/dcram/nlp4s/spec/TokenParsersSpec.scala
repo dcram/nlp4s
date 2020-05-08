@@ -2,7 +2,7 @@ package fr.dcram.nlp4s.spec
 
 import com.typesafe.scalalogging.LazyLogging
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
-import fr.dcram.nlp4s.ner.{NerResource, Token, TokenParsers, regexTokenizer}
+import fr.dcram.nlp4s.ner.{NerResource, Token, TokenParsers, TokenParsersRef, regexTokenizer}
 import org.scalatest.FunSpec
 
 import scala.language.implicitConversions
@@ -12,8 +12,6 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
 
   private val streetTypes = NerResource.asTrie("resource://fr/street-types.trie", sep = ',', tokenizer = tokenizer)
 
-  object Ref extends TokenParsers
-
   case class Address(
                       num:Option[String],
                       streetType:Option[String],
@@ -22,7 +20,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
                       city:String)
 
 
-  def zip(P:TokenParsers):TokenParser[String] = {
+  def zipCode(P:TokenParsers):TokenParser[String] = {
     import P._
     digit(5) or (digit(2) ~ digit(3)).map{case (s1,s2) => s"$s1$s2" }
   }
@@ -30,12 +28,12 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
   def addressParser(P:TokenParsers):TokenParser[Address] = {
     import P._
 
-    val streetType:TokenParser[String] = (inTrie(streetTypes) ~ ".".opt).map(_._1._1)
+    val streetType:TokenParser[String] = (inTrie(streetTypes) ~ ".".opt).map(_._1)
     val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = inSet(Set(",", "-"))
     val streetName:TokenParser[String] = """^[\w-']+$""".r.map(_.group(0))
 
-    $(digit, streetType, streetName.mn(1,8), sep.opt, zip(P), city)
+    $(digit, streetType, streetName.mn(1,8), sep.opt, zipCode(P), city)
       .map {
         case (num, stype, sname, _, zip, city) => Address(
           Some(num),
@@ -52,7 +50,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
     describe("Preservation of offsets") {
       val sent = "10 rue Paul Blanchard , 44 000 Nantes"
       val tokens = tokenizer(sent)
-      val token:Token[Address] = Ref.scan(addressParser(Ref))(tokens).head
+      val token:Token[Address] = TokenParsersRef.scan(addressParser(TokenParsersRef))(tokens).head.m
 
       describe("full sentence") {
         it("begin=0"){assert(token.begin == 0)}
@@ -60,7 +58,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
       }
 
       describe("zip") {
-        val token:Token[String] = Ref.scan(zip(Ref))(tokens).head
+        val token:Token[String] = TokenParsersRef.scan(zipCode(TokenParsersRef))(tokens).head.m
         it("begin=24"){assert(token.begin == 24)}
         it(s"end=30"){assert(token.end == 30)}
       }
@@ -77,7 +75,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
       case (sentence, Some(address@(num, streetType, streetName, zip, city))) =>
         describe(sentence) {
           val tokens = tokenizer(sentence)
-          val addresses:List[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).toList
+          val addresses:List[Token[Address]] = TokenParsersRef.scan(addressParser(TokenParsersRef))(tokens).map(_.m).toList
           it("should extract one address") {assert(addresses.length == 1)}
           addresses.headOption.foreach{
             addr =>
@@ -107,7 +105,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
 
       for(n <- Seq(1,10,100,1000,10000,100000)) {
         val duration = bm(n, () => {
-          val addresses:Option[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).headOption
+          val addresses:Option[Token[Address]] = TokenParsersRef.scan(addressParser(TokenParsersRef))(tokens).headOption.map(_.m)
         })
         println(f"$n%8d times -> $duration%d ms")
       }
@@ -121,7 +119,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
       val tokens = tokenizer(sent10000)
 
       logger.info(s"scanning addresses")
-      val addresses:List[Token[Address]] = Ref.scan(addressParser(Ref))(tokens).toList
+      val addresses:List[Token[Address]] = TokenParsersRef.scan(addressParser(TokenParsersRef))(tokens).map(_.m).toList
       logger.info(s"scanned ${addresses.size} addresses")
       assert(addresses.size == n)
 

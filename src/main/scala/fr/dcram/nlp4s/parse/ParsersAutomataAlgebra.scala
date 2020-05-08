@@ -13,6 +13,7 @@ trait ParsersAutomataAlgebra[P[+_]] {
   def map[A,B](p:P[A])(f: A => B): P[B]
   def flatMap[A,B](p:P[A])(f: A => P[B]): P[B]
   def or[A,B>:A](p1:P[A], p2: => P[B]): P[B]
+
   def opt[A](p:P[A]): P[Option[A]] = p.map(Some.apply) or succeed(None)
   def rep[A](n:Int)(p:P[A]): P[List[A]] = List.fill(n)(p)
     .foldRight(succeed(List.empty[A])){

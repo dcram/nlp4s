@@ -7,7 +7,7 @@ import fr.dcram.nlp4s.util.Trie
 
 import scala.io.Source
 
-object NerResource {
+trait NerResourcesIO {
   def source(uri:String):Source = {
     val parsed = new URI(uri)
     val src = Option(parsed.getScheme).map(_.toLowerCase) match {
@@ -20,7 +20,7 @@ object NerResource {
     src
   }
 
-  def asMap(uri:String, sep:Char):Map[String, String] = {
+  def loadMap(uri:String, sep:Char):Map[String, String] = {
     source(uri).getLines().map(_.trim)
       .filterNot(_.startsWith("#"))
       .map(_.split(sep))
@@ -29,14 +29,14 @@ object NerResource {
       .toMap
   }
 
-  def asTrie(uri:String, sep:Char, tokenizer:StringTokenizer):Trie[String, String] = {
-    val map = asMap(uri, sep)
+  def loadTrie(uri:String, sep:Char, tokenizer:StringTokenizer):Trie[String, String] = {
+    val map = loadMap(uri, sep)
     Trie.fromEntries[String, String](
       entries = map.map{case(k,v) => (tokenizer(k).map(_.obj), v)}
     )
   }
 
-  def asSet(uri:String):Set[String] = {
+  def loadSet(uri:String):Set[String] = {
     source(uri).getLines().map(_.trim)
       .filterNot(_.startsWith("#"))
       .toSet

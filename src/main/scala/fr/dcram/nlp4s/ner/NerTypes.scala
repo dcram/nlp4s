@@ -7,4 +7,5 @@ object NerTypes {
   type StringTokenizer = String => Stream[Token[String]]
 
 
+
 }

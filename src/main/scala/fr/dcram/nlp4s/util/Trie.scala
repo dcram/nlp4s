@@ -1,6 +1,6 @@
 package fr.dcram.nlp4s.util
 
-case class Trie[K,V](value:Option[V], children:Map[K, Trie[K, V]]) {
+case class Trie[K,+V](value:Option[V], children:Map[K, Trie[K, V]]) {
   def getValue(key:Iterable[K]):Option[V] = key match {
     case k :: tail => children.get(k) match {
       case Some(childTrie) =>
@@ -13,6 +13,11 @@ case class Trie[K,V](value:Option[V], children:Map[K, Trie[K, V]]) {
   }
 
   def getChild(k:K):Option[Trie[K,V]] = children.get(k)
+
+  def mapKey[K2](f:K => K2):Trie[K2,V] = Trie(
+    value,
+    children.map{case (k,v) => (f(k),v.mapKey(f))}
+  )
 
 }
 

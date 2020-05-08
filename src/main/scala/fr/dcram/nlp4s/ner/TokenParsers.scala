@@ -9,7 +9,10 @@ import fr.dcram.nlp4s.util.Trie
 import scala.util.matching.Regex
 
 
-trait TokenParsers extends BacktrackingParsers[Token[String]] with SeqArities {
+trait TokenParsers extends BacktrackingParsers[Token[String]]
+  with NerResourcesIO
+  with SeqArities
+            {
   ref =>
 
   def digit:TokenParser[String] = reg("""^\d+$""".r).map(_.group(0))
@@ -18,37 +21,63 @@ trait TokenParsers extends BacktrackingParsers[Token[String]] with SeqArities {
   def %[B](f:String => Option[B]):TokenParser[B] = fromOptTok(f)
   def ###[B](f:String => Boolean):TokenParser[String] = fromOptTok(str => if(f(str)) Some(str) else None)
 
-  def inSet(strings:Set[String]):TokenParser[String] = ###(strings.contains)
-  def inMap[V](map:Map[String, V]):TokenParser[V] = fromOptTok(map.get)
+  def in[A](nerResource:NerResource[A]):TokenParser[A] = nerResource.parser
+  def in(strings:String*):NerResource[String] = SetResource(Set.apply(strings:_*), identity)
 
-  def inTrie[V](trie:Trie[String, V]):TokenParser[V] = {
-    def doInTrie(trie:Trie[String, V], tokens:List[Token[String]]): TokenParser[V] = or(
-      s => s match {
-        case tok +: tail => trie.getChild(tok.obj) match {
-          case Some(child) => doInTrie(child, tok :: tokens)(tail)
-          case None => Stream.empty
-        }
-        case _ => Stream.empty
-      },
-      s => trie.value match {
-        case Some(v) =>
-          val tok = MergeApplicative.sequence(tokens.reverse).map(tokens => (v,tokens))
-          Stream(Result(s, MatchData(tok.copy(obj = v), tokens.reverse)))
-        case None => Stream.empty
-      }
-    )
-
-    doInTrie(trie, List.empty)
-
+  case class SetResource(set: Set[String], override protected val resPreparator:String => String) extends NerResource[String] {
+    override protected def rawParser: TokenParser[String] = ###(set.contains)
+    override def prepareStr(preparator: String => String): NerResource[String] = {
+      val strings = set.map(preparator)
+      SetResource(strings, preparator andThen resPreparator)
+    }
   }
 
+  case class MapResource[V](map: Map[String, V], override protected val resPreparator:String => String) extends NerResource[V] {
+    override protected def rawParser: TokenParser[V] = fromOptTok(map.get)
+    override def prepareStr(f: String => String): NerResource[V] = MapResource(map.map{case (k,v) => (f(k), v)}, f andThen resPreparator)
+  }
+
+  case class TrieResource[V](trie: Trie[String, V], override protected val resPreparator:String => String) extends NerResource[V] {
+    override protected def rawParser: TokenParser[V] = {
+      def doInTrie(trie:Trie[String, V], tokens:List[Token[String]]): TokenParser[V] = or(
+        s => s match {
+          case tok +: tail => trie.getChild(tok.obj) match {
+            case Some(child) => doInTrie(child, tok :: tokens)(tail)
+            case None => Stream.empty
+          }
+          case _ => Stream.empty
+        },
+        s => trie.value match {
+          case Some(v) =>
+            val tok = MergeApplicative.sequence(tokens.reverse).map(tokens => (v,tokens))
+            Stream(Result(s, MatchData(tok.copy(obj = v), tokens.reverse)))
+          case None => Stream.empty
+        }
+      )
+
+      doInTrie(trie, List.empty)
+    }
+
+    override def prepareStr(f: String => String): NerResource[V] = TrieResource(trie.mapKey(f), f andThen resPreparator)
+  }
+
+  def set(strings:Set[String]):TokenParser[String] = in(SetResource(strings, identity))
+  def map[V](map:Map[String, V]):TokenParser[V] = in(MapResource(map, identity))
+  def trie[V](trie:Trie[String, V]):TokenParser[V] = in(TrieResource(trie, identity))
+
+  implicit def asSetResource(set:Set[String]):NerResource[String] = SetResource(set, identity)
+  implicit def asMapResource[V](map:Map[String,V]):NerResource[V] = MapResource(map, identity)
+  implicit def asTrieResource[V](trie:Trie[String,V]):NerResource[V] = TrieResource(trie, identity)
+  implicit def resourceAsParser[V](r:NerResource[V]):TokenParser[V] = r.parser
+  implicit def resourceAsParser2[V,O](r:O)(implicit f: O => NerResource[V]):TokenParser[V] = r.parser
 
   implicit def reg(r:Regex):TokenParser[Regex.Match] = fromOptTok(r.findFirstMatchIn)
   implicit def str(str:String):TokenParser[String] = fromOptTok(t => if(t == str) Some(str) else None)
+
   implicit def ops[A1,A](p:A1)(implicit f: A1 => TokenParser[A]):TokenParserOps[A] = TokenParserOps(p)
   implicit def ops2[A](p:TokenParser[A]):TokenParserOps[A] = TokenParserOps(p)
 
-  case class TokenParserOps[A](p:TokenParser[A]) {
+  case class TokenParserOps[A](p:TokenParser[A]) extends Preparable[A, TokenParser] {
     private[this] val TokenApp = Token.MergeApplicative
     def mn(m:Int, n:Int):TokenParser[List[A]] = ref.map(ref.mn(m,n)(p))(TokenApp.sequence)
     def n(n:Int):TokenParser[List[A]] = ref.map(ref.rep(n)(p))(TokenApp.sequence)
@@ -62,12 +91,23 @@ trait TokenParsers extends BacktrackingParsers[Token[String]] with SeqArities {
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
     def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}
 
-    def prepareStr(f:String => String): TokenParser[A] = p.prepare(token => token.map(f))
-    def ascii(): TokenParser[A] = prepareStr(_.ascii)
-    def upper(): TokenParser[A] = prepareStr(_.upper)
-    def lower(): TokenParser[A] = prepareStr(_.lower)
+    override def prepareStr(f:String => String): TokenParser[A] = p.prepare(token => token.map(f))
   }
 
+  abstract class NerResource[A](protected val resPreparator:String => String = identity) extends Preparable[A, NerResource] {
+    protected def rawParser:TokenParser[A]
+
+    def parser:TokenParser[A] = rawParser.prepareStr(resPreparator)
+  }
+
+  trait Preparable[A,F[_]] {
+    def prepareStr(f:String => String): F[A]
+    def ascii(): F[A] = prepareStr(_.ascii)
+    def asciiLower(): F[A] = prepareStr(_.ascii.lower)
+    def upper(): F[A] = prepareStr(_.upper)
+    def lower(): F[A] = prepareStr(_.lower)
+
+  }
 }
 
 trait SeqArities {

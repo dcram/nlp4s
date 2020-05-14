@@ -24,7 +24,7 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
   val zipCode:TokenParser[String] = digit(5) or (digit(2) ~ digit(3)).map{case (s1,s2) => s"$s1$s2" }
 
   val addressParser:TokenParser[Address] = {
-    val streetType:TokenParser[String] = (in(streetTypes).lower ~ ".".opt).map(_._1)
+    val streetType:TokenParser[String] = (in(streetTypes).lower_ ~ ".".opt).map(_._1)
     val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = in(",", "-")
     val streetName:TokenParser[String] = """^[\w-']+$""".r.map(_.group(0))
@@ -49,18 +49,18 @@ class TokenParsersSpec extends FunSpec with LazyLogging {
         val sentence = tokenizer("a b A b A B c")
         Seq(
           (in("a"), Seq(("a", 0, 1))),
-          (in("a").lower, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
+          (in("a").lower_, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
           (in("A"), Seq(("A", 4, 5), ("A", 8, 9))),
-          (in("A").lower, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
+          (in("A").lower_, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
         ).zipWithIndex.foreach {
           case ((parser, tokens), i) =>
             it(s"$i. should extract tokens ${tokens}") {
               assert(parser.scan(sentence).map(_.tokens.head).map{case Token(begin, end, txt) => (txt, begin, end)} == tokens)
             }
         }
-
       }
     }
+
     describe("Preservation of offsets") {
       val sent = "10 rue Paul Blanchard , 44 000 Nantes"
       val tokens = tokenizer(sent)

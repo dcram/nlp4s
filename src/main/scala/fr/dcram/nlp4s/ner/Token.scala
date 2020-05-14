@@ -51,7 +51,7 @@ object Token {
                                                 fd: => Token[D],
                                                 fe: => Token[E],
                                                 ff: => Token[F],
-                                                fg: => Token[G],
+                                                fg: => Token[G]
                                               )(f: (A,B,C,D,E,F,G) => H): Token[H] = Token(
       Iterator(fa, fb, fc, fd, fe, ff, fg).minBy(_.begin).begin,
       Iterator(fa, fb, fc, fd, fe, ff, fg).maxBy(_.end).end,
@@ -66,7 +66,7 @@ object Token {
                                                 fe: => Token[E],
                                                 ff: => Token[F],
                                                 fg: => Token[G],
-                                                fh: => Token[H],
+                                                fh: => Token[H]
                                               )(f: (A,B,C,D,E,F,G,H) => I): Token[I] = Token(
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh).minBy(_.begin).begin,
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh).maxBy(_.end).end,
@@ -82,7 +82,7 @@ object Token {
                                                 ff: => Token[F],
                                                 fg: => Token[G],
                                                 fh: => Token[H],
-                                                fi: => Token[I],
+                                                fi: => Token[I]
                                               )(f: (A,B,C,D,E,F,G,H,I) => J): Token[J] = Token(
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh, fi).minBy(_.begin).begin,
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh, fi).maxBy(_.end).end,
@@ -99,7 +99,7 @@ object Token {
                                                 fg: => Token[G],
                                                 fh: => Token[H],
                                                 fi: => Token[I],
-                                                fj: => Token[J],
+                                                fj: => Token[J]
                                               )(f: (A,B,C,D,E,F,G,H,I,J) => K): Token[K] = Token(
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh, fi, fj).minBy(_.begin).begin,
       Iterator(fa, fb, fc, fd, fe, ff, fg, fh, fi, fj).maxBy(_.end).end,

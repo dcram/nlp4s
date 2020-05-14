@@ -32,9 +32,9 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
     }
   }
 
-  case class MapResource[V](map: Map[String, V], override protected val resPreparator:String => String) extends NerResource[V] {
-    override protected def rawParser: TokenParser[V] = fromOptTok(map.get)
-    override def prepareStr(f: String => String): NerResource[V] = MapResource(map.map{case (k,v) => (f(k), v)}, f andThen resPreparator)
+  case class MapResource[V](map: Map[String, V], override protected val resPreparator:String => String) extends NerResource[(String, V)] {
+    override protected def rawParser: TokenParser[(String,V)] = fromOptTok(str => map.get(str).map(v => (str, v)))
+    override def prepareStr(f: String => String): NerResource[(String, V)] = MapResource(map.map{case (k,v) => (f(k), v)}, f andThen resPreparator)
   }
 
   case class TrieResource[V](trie: Trie[String, V], override protected val resPreparator:String => String) extends NerResource[V] {
@@ -62,11 +62,33 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
   }
 
   def set(strings:Set[String]):TokenParser[String] = in(SetResource(strings, identity))
-  def map[V](map:Map[String, V]):TokenParser[V] = in(MapResource(map, identity))
+  def map[V](map:Map[String, V]):TokenParser[(String, V)] = in(MapResource(map, identity))
   def trie[V](trie:Trie[String, V]):TokenParser[V] = in(TrieResource(trie, identity))
 
+  def zipJoin[A](p:TokenParser[A])(sep:String = " "):TokenParser[(A,String)] = zipTokens(p).map{
+    case (a, tokens) =>
+      val str = tokens match {
+          case Nil => ""
+          case head :: tail => tail.foldLeft(head){
+            case (Token(b1, e1, s1), Token(b2, e2, s2)) =>
+              Token(b1, e2, s"$s1${" "*(b2 - e1)}$s2")
+          }.obj
+        }
+      (a, str)
+  }
+
+  def join[_](p:TokenParser[_])(sep:String = " "):TokenParser[String] = zipJoin(p)(sep).map(_._2)
+
+  def tokens[_](p:TokenParser[_]):TokenParser[List[Token[String]]] = zipTokens(p).map(_._2)
+
+  def zipTokens[A](p:TokenParser[A]):TokenParser[(A,List[Token[String]])] = seq => {
+    p(seq).map { case Result(tail, MatchData(a, tokens)) =>
+      Result(tail, MatchData(a.map(_ => (a.obj, tokens)), tokens)) }
+  }
+  def list[_](p:TokenParser[_]):TokenParser[List[String]] = tokens(p).map(toks => toks.map(_.obj))
+
   implicit def asSetResource(set:Set[String]):NerResource[String] = SetResource(set, identity)
-  implicit def asMapResource[V](map:Map[String,V]):NerResource[V] = MapResource(map, identity)
+  implicit def asMapResource[V](map:Map[String,V]):NerResource[(String, V)] = MapResource(map, identity)
   implicit def asTrieResource[V](trie:Trie[String,V]):NerResource[V] = TrieResource(trie, identity)
   implicit def resourceAsParser[V](r:NerResource[V]):TokenParser[V] = r.parser
   implicit def resourceAsParser2[V,O](r:O)(implicit f: O => NerResource[V]):TokenParser[V] = r.parser
@@ -76,6 +98,13 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
 
   implicit def ops[A1,A](p:A1)(implicit f: A1 => TokenParser[A]):TokenParserOps[A] = TokenParserOps(p)
   implicit def ops2[A](p:TokenParser[A]):TokenParserOps[A] = TokenParserOps(p)
+
+  implicit def regexOps[A1](p:A1)(implicit f: A1 => TokenParser[Regex.Match]):RegexTokenParserOps = RegexTokenParserOps(p)
+
+  case class RegexTokenParserOps(p:TokenParser[Regex.Match]) {
+    def str:TokenParser[String] = p.map(_.group(0))
+    def group(i:Int):TokenParser[String] = p.map(_.group(i))
+  }
 
   case class TokenParserOps[A](p:TokenParser[A]) extends Preparable[A, TokenParser] {
     private[this] val TokenApp = Token.MergeApplicative
@@ -90,6 +119,11 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
     def map[B](f: A => B): TokenParser[B] = ref.map(p)(_.map(f))
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
     def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}
+    def zipTokens: TokenParser[(A,List[Token[String]])] = ref.zipTokens(p)
+    def zipJoin(sep:String = " "): TokenParser[(A,String)] = ref.zipJoin(p)(sep)
+    def tokens: TokenParser[List[Token[String]]] = ref.tokens(p)
+    def list: TokenParser[List[String]] = ref.list(p)
+    def join(sep:String = " "): TokenParser[String] = ref.join(p)(sep)
 
     override def prepareStr(f:String => String): TokenParser[A] = p.prepare(token => token.map(f))
   }
@@ -102,10 +136,10 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
 
   trait Preparable[A,F[_]] {
     def prepareStr(f:String => String): F[A]
-    def ascii(): F[A] = prepareStr(_.ascii)
-    def asciiLower(): F[A] = prepareStr(_.ascii.lower)
-    def upper(): F[A] = prepareStr(_.upper)
-    def lower(): F[A] = prepareStr(_.lower)
+    def ascii_(): F[A] = prepareStr(_.ascii)
+    def asciiLower_(): F[A] = prepareStr(_.ascii.lower)
+    def upper_(): F[A] = prepareStr(_.upper)
+    def lower_(): F[A] = prepareStr(_.lower)
 
   }
 }
@@ -118,7 +152,7 @@ trait SeqArities {
 
   def $[A1,A2](
                 p1:TokenParser[A1],
-                p2: => TokenParser[A2],
+                p2: => TokenParser[A2]
               ):
   TokenParser[(A1,A2)] = seq(p1, p2)
     .map{case (a1,a2) => TokenApp.map2(a1, a2)(Tuple2.apply)}
@@ -126,7 +160,7 @@ trait SeqArities {
   def $[A1,A2,A3](
                    p1:TokenParser[A1],
                    p2: => TokenParser[A2],
-                   p3: => TokenParser[A3],
+                   p3: => TokenParser[A3]
                  ):
   TokenParser[(A1,A2,A3)] = seq(p1, p2, p3)
     .map{case (a1,a2,a3) => TokenApp.map3(a1, a2, a3)(Tuple3.apply)}
@@ -134,7 +168,7 @@ trait SeqArities {
                       p1:TokenParser[A1],
                       p2: => TokenParser[A2],
                       p3: => TokenParser[A3],
-                      p4: => TokenParser[A4],
+                      p4: => TokenParser[A4]
                     ):
   TokenParser[(A1,A2,A3,A4)] = seq(p1, p2, p3, p4)
     .map{case (a1,a2,a3,a4) => TokenApp.map4(a1, a2, a3, a4)(Tuple4.apply)}
@@ -143,7 +177,7 @@ trait SeqArities {
                          p2: => TokenParser[A2],
                          p3: => TokenParser[A3],
                          p4: => TokenParser[A4],
-                         p5: => TokenParser[A5],
+                         p5: => TokenParser[A5]
                        ):
   TokenParser[(A1,A2,A3,A4,A5)] = seq(p1, p2, p3, p4, p5)
     .map{case (a1,a2,a3,a4,a5) => TokenApp.map5(a1, a2, a3, a4, a5)(Tuple5.apply)}
@@ -166,7 +200,7 @@ trait SeqArities {
                                p4: => TokenParser[A4],
                                p5: => TokenParser[A5],
                                p6: => TokenParser[A6],
-                               p7: => TokenParser[A7],
+                               p7: => TokenParser[A7]
                              ):
   TokenParser[(A1,A2,A3,A4,A5,A6,A7)] = seq(p1, p2, p3, p4, p5, p6, p7)
     .map{case (a1,a2,a3,a4,a5,a6,a7) => TokenApp.map7(a1, a2, a3, a4, a5, a6,a7)(Tuple7.apply)}
@@ -179,7 +213,7 @@ trait SeqArities {
                                   p5: => TokenParser[A5],
                                   p6: => TokenParser[A6],
                                   p7: => TokenParser[A7],
-                                  p8: => TokenParser[A8],
+                                  p8: => TokenParser[A8]
                                 ):
   TokenParser[(A1,A2,A3,A4,A5,A6,A7,A8)] = seq(p1, p2, p3, p4, p5, p6, p7, p8)
     .map{case (a1,a2,a3,a4,a5,a6,a7,a8) => TokenApp.map8(a1, a2, a3, a4, a5, a6,a7,a8)(Tuple8.apply)}
@@ -193,7 +227,7 @@ trait SeqArities {
                                      p6: => TokenParser[A6],
                                      p7: => TokenParser[A7],
                                      p8: => TokenParser[A8],
-                                     p9: => TokenParser[A9],
+                                     p9: => TokenParser[A9]
                                    ):
   TokenParser[(A1,A2,A3,A4,A5,A6,A7,A8,A9)] = seq(p1, p2, p3, p4, p5, p6, p7, p8, p9)
     .map{case (a1,a2,a3,a4,a5,a6,a7,a8,a9) => TokenApp.map9(a1, a2, a3, a4, a5, a6,a7,a8,a9)(Tuple9.apply)}
@@ -208,7 +242,7 @@ trait SeqArities {
                                          p7: => TokenParser[A7],
                                          p8: => TokenParser[A8],
                                          p9: => TokenParser[A9],
-                                         p10: => TokenParser[A10],
+                                         p10: => TokenParser[A10]
                                        ):
   TokenParser[(A1,A2,A3,A4,A5,A6,A7,A8,A9,A10)] = seq(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)
     .map{case (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) => TokenApp.map10(a1, a2, a3, a4, a5, a6,a7,a8,a9,a10)(Tuple10.apply)}

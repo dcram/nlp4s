@@ -43,8 +43,7 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
 
   def filter[A](p: Parser[Tok, A])(f: A => Boolean): Parser[Tok, A] = seq => p(seq).filter(r => f(r.m.data))
 
-
-  def zip[A,Tok1](p: Parser[Tok, A]):Parser[(Tok, Tok1), A] = ???
+  def filterOpt[A,B](p: Parser[Tok, A])(f: A => Option[B]): Parser[Tok, B] = p.map(f).filter(_.isDefined).map(_.get)
 
 
   def mapTok[Tok1, Tok2, A](p: Parser[Tok2, A])(f:Tok1 => Tok2):Parser[Tok1, A] = seq => p(seq map f).map {
@@ -71,10 +70,12 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
     }
   }
 
-  implicit def parserOps[A](p: Parser[Tok, A]): ParserOps[A] = ParserOps(p)
+  implicit def parserOps[A1,A](p: A1)(implicit f:A1 => Parser[Tok, A]): ParserOps[A] = ParserOps(p)
+  implicit def parserOps2[A](p: Parser[Tok, A]): ParserOps[A] = ParserOps(p)
 
   case class ParserOps[A](p: Parser[Tok, A]) {
     def filter(f: A => Boolean): Parser[Tok, A] = self.filter(p)(f)
+    def filterOpt[B](f: A => Option[B]): Parser[Tok, B] = self.filterOpt(p)(f)
     def parse(seq: Seq[Tok]): Option[MatchData[Tok, A]] = self.parse(p)(seq)
     def scan(seq: Seq[Tok]): Stream[MatchData[Tok, A]] = self.scan(p)(seq)
     def prepare[Tok1](f:Tok1 => Tok): Parser[Tok1, A] = self.prepare(p)(f)

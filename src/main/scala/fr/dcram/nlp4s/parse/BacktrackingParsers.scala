@@ -1,6 +1,10 @@
 package fr.dcram.nlp4s.parse
 
+import java.util.concurrent.atomic.AtomicReference
+
 import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Parser, Result}
+
+import scala.annotation.tailrec
 
 trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok, x]})#f] {
   self =>
@@ -58,16 +62,28 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
 
   def parse[A](p: Parser[Tok, A])(seq: Seq[Tok]): Option[MatchData[Tok, A]] = p(seq).headOption.map(_.m)
 
-  def scan[A](p: Parser[Tok, A])(seq: Seq[Tok]): Stream[MatchData[Tok, A]] = {
+
+  def scan[A](p: Parser[Tok, A])(seq: Seq[Tok]): Stream[MatchData[Tok, A]] = pscan(p, seq)
+
+  @tailrec
+  private def pscan[A](p: Parser[Tok, A], seq: Seq[Tok]): Stream[MatchData[Tok, A]] = {
     p(seq).headOption match {
       case Some(Result(tail, m)) =>
-        m #:: scan(p)(tail)
+        val tailRef = new AtomicReference(tail)
+        m #:: pscanHelp(p, tailRef)
       case None =>
         seq match {
-          case _ +: tail => scan(p)(tail)
+          case _ +: tail => pscan(p, tail)
           case Nil => Stream.empty
         }
     }
+  }
+
+  /*
+  See https://stackoverflow.com/a/12529698
+   */
+  private def pscanHelp[A](p: Parser[Tok, A], seq: AtomicReference[Seq[Tok]]): Stream[MatchData[Tok, A]] = {
+    pscan(p, seq.getAndSet(null))
   }
 
   implicit def parserOps[A1,A](p: A1)(implicit f:A1 => Parser[Tok, A]): ParserOps[A] = ParserOps(p)

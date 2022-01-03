@@ -2,7 +2,7 @@ package fr.dcram.nlp4s.ner
 
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 import fr.dcram.nlp4s.ner.Token.MergeApplicative
-import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Result}
+import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Result, ScanResult}
 import fr.dcram.nlp4s.parse.BacktrackingParsers
 import fr.dcram.nlp4s.util.Trie
 
@@ -115,7 +115,7 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
     def +():TokenParser[List[A]] = ref.map(ref.plus(p))(TokenApp.sequence)
     def *():TokenParser[List[A]] = ref.map(ref.star(p))(TokenApp.sequence)
     def opt:TokenParser[Option[A]] = ref.map(ref.opt(p))(TokenApp.option)
-    def scan(seq:Seq[Token[String]], timeoutMillis:Long):List[MatchData[Token[String],Token[A]]] = ref.scan(p)(seq, timeoutMillis)
+    def scan(seq:Seq[Token[String]], timeoutMillis:Long = Long.MaxValue, matchLimit:Int = Int.MaxValue):ScanResult[Token[String],Token[A]] = ref.scan(p)(seq, timeoutMillis, matchLimit)
     def map[B](f: A => B): TokenParser[B] = ref.map(p)(_.map(f))
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
     def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}

@@ -55,7 +55,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
         ).zipWithIndex.foreach {
           case ((parser, tokens), i) =>
             it(s"$i. should extract tokens ${tokens}") {
-              assert(parser.scan(sentence).map(_.tokens.head).map{case Token(begin, end, txt) => (txt, begin, end)} == tokens)
+              assert(parser.scan(sentence, Long.MaxValue).map(_.tokens.head).map{case Token(begin, end, txt) => (txt, begin, end)} == tokens)
             }
         }
       }
@@ -64,7 +64,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
     describe("Preservation of offsets") {
       val sent = "10 rue Paul Blanchard , 44 000 Nantes"
       val tokens = tokenizer(sent)
-      val token:Token[Address] = addressParser.scan(tokens).head.data
+      val token:Token[Address] = addressParser.scan(tokens, Long.MaxValue).head.data
 
       describe("full sentence") {
         it("begin=0"){assert(token.begin == 0)}
@@ -72,7 +72,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
       }
 
       describe("zip") {
-        val token:Token[String] = zipCode.scan(tokens).head.data
+        val token:Token[String] = zipCode.scan(tokens, Long.MaxValue).head.data
         it("begin=24"){assert(token.begin == 24)}
         it(s"end=30"){assert(token.end == 30)}
       }
@@ -89,7 +89,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
       case (sentence, Some(address@(num, streetType, streetName, zip, city))) =>
         describe(sentence) {
           val tokens = tokenizer(sentence)
-          val addresses:List[Token[Address]] = addressParser.scan(tokens).map(_.data).toList
+          val addresses:List[Token[Address]] = addressParser.scan(tokens, Long.MaxValue).map(_.data).toList
           it("should extract one address") {assert(addresses.length == 1)}
           addresses.headOption.foreach{
             addr =>
@@ -117,11 +117,22 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
     it("bm1") {
       val tokens = tokenizer("10 rue Paul Blanchard , 44000 Nantes")
 
-      for(n <- Seq(1,10,100,1000,10000,100000)) {
+      for(n <- Seq(1,10,100,1000,10000)) {
         val duration = bm(n, () => {
-          val addresses:Option[Token[Address]] = addressParser.scan(tokens).headOption.map(_.data)
+          val addresses:Option[Token[Address]] = addressParser.scan(tokens, Long.MaxValue).headOption.map(_.data)
         })
         println(f"$n%8d times -> $duration%d ms")
+      }
+    }
+    val timeoutMillis=100l
+    it(s"bm2 (with timeout=${timeoutMillis}ms)") {
+
+      for(n <- Seq(1,10,100,1000,10000,100000,1000000)) {
+        val tokens = tokenizer("10 rue Paul Blanchard , 44000 Nantes. ".repeat(n))
+        val start = System.currentTimeMillis()
+        val size = addressParser.scan(tokens, timeoutMillis).size
+        val duration = System.currentTimeMillis() - start
+        println(f"$n%8d times -> found $size matches in $duration%d ms")
       }
     }
     val n = 100000
@@ -133,7 +144,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
       val tokens = tokenizer(sent10000)
 
       logger.info(s"scanning addresses")
-      val addresses:List[Token[Address]] = addressParser.scan(tokens).map(_.data).toList
+      val addresses:List[Token[Address]] = addressParser.scan(tokens, Long.MaxValue).map(_.data).toList
       logger.info(s"scanned ${addresses.size} addresses")
       assert(addresses.size == n)
 

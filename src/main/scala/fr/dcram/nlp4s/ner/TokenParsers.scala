@@ -115,7 +115,7 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
     def +():TokenParser[List[A]] = ref.map(ref.plus(p))(TokenApp.sequence)
     def *():TokenParser[List[A]] = ref.map(ref.star(p))(TokenApp.sequence)
     def opt:TokenParser[Option[A]] = ref.map(ref.opt(p))(TokenApp.option)
-    def scan(seq:Seq[Token[String]]):Stream[MatchData[Token[String],Token[A]]] = ref.scan(p)(seq)
+    def scan(seq:Seq[Token[String]], timeoutMillis:Long):List[MatchData[Token[String],Token[A]]] = ref.scan(p)(seq, timeoutMillis)
     def map[B](f: A => B): TokenParser[B] = ref.map(p)(_.map(f))
     def |[B>:A](p2:TokenParser[B]): TokenParser[B] = ref.or(p,p2)
     def ~[B](p2:TokenParser[B]): TokenParser[(A,B)] = ref.map(ref.map2(p,p2)){case (a,b) => TokenApp.product(a,b)}

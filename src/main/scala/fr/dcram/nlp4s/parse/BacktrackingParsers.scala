@@ -1,7 +1,5 @@
 package fr.dcram.nlp4s.parse
 
-import java.util.concurrent.atomic.AtomicReference
-
 import fr.dcram.nlp4s.parse.BacktrackingParserTypes.{MatchData, Parser, Result}
 
 import scala.annotation.tailrec
@@ -63,27 +61,29 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
   def parse[A](p: Parser[Tok, A])(seq: Seq[Tok]): Option[MatchData[Tok, A]] = p(seq).headOption.map(_.m)
 
 
-  def scan[A](p: Parser[Tok, A])(seq: Seq[Tok]): Stream[MatchData[Tok, A]] = pscan(p, seq)
-
-  @tailrec
-  private def pscan[A](p: Parser[Tok, A], seq: Seq[Tok]): Stream[MatchData[Tok, A]] = {
-    p(seq).headOption match {
-      case Some(Result(tail, m)) =>
-        val tailRef = new AtomicReference(tail)
-        m #:: pscanHelp(p, tailRef)
-      case None =>
-        seq match {
-          case _ +: tail => pscan(p, tail)
-          case Nil => Stream.empty
-        }
-    }
+  def scan[A](p: Parser[Tok, A])(seq: Seq[Tok], timeoutMillis:Long): List[MatchData[Tok, A]] = {
+    Scanner(System.currentTimeMillis(), timeoutMillis, p).scan(seq).reverse
   }
 
-  /*
-  See https://stackoverflow.com/a/12529698
-   */
-  private def pscanHelp[A](p: Parser[Tok, A], seq: AtomicReference[Seq[Tok]]): Stream[MatchData[Tok, A]] = {
-    pscan(p, seq.getAndSet(null))
+  case class Scanner[A](start:Long, timeoutMillis:Long, p: Parser[Tok, A]) {
+    def scan(seq: Seq[Tok]): List[MatchData[Tok, A]] = privateScan(seq, Nil)
+
+    @tailrec
+    private def privateScan(seq: Seq[Tok], matches:List[MatchData[Tok, A]]): List[MatchData[Tok, A]] = {
+      if(System.currentTimeMillis() - start > timeoutMillis) {
+        matches
+      } else {
+        p(seq).headOption match {
+          case None =>
+            seq match {
+              case _ +: tail => privateScan(tail, matches)
+              case Nil => matches
+            }
+          case Some(Result(tail, m)) =>
+            privateScan(tail, m :: matches)
+        }
+      }
+    }
   }
 
   implicit def parserOps[A1,A](p: A1)(implicit f:A1 => Parser[Tok, A]): ParserOps[A] = ParserOps(p)
@@ -93,7 +93,7 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
     def filter(f: A => Boolean): Parser[Tok, A] = self.filter(p)(f)
     def filterOpt[B](f: A => Option[B]): Parser[Tok, B] = self.filterOpt(p)(f)
     def parse(seq: Seq[Tok]): Option[MatchData[Tok, A]] = self.parse(p)(seq)
-    def scan(seq: Seq[Tok]): Stream[MatchData[Tok, A]] = self.scan(p)(seq)
+    def scan(seq: Seq[Tok], timeoutMillis: Long): List[MatchData[Tok, A]] = self.scan(p)(seq, timeoutMillis)
     def prepare[Tok1](f:Tok1 => Tok): Parser[Tok1, A] = self.prepare(p)(f)
     def endoPrepare(f:Tok => Tok): Parser[Tok, A] = prepare(f)
   }

@@ -1,12 +1,12 @@
 package fr.dcram.nlp4s.spec
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import fr.dcram.nlp4s.parse.BacktrackingParserTypes.Parser
 import fr.dcram.nlp4s.parse.BacktrackingParsers
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class BacktrackingParsersSpec extends FunSpec {
+import java.util.concurrent.atomic.AtomicInteger
+
+class BacktrackingParsersSpec extends AnyFunSpec {
 
   describe(classOf[BacktrackingParsers[Char]].toString) {
 

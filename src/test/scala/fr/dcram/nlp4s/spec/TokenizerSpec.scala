@@ -2,9 +2,9 @@ package fr.dcram.nlp4s.spec
 
 import fr.dcram.nlp4s.ner.NerTypes.StringTokenizer
 import fr.dcram.nlp4s.ner._
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class TokenizerSpec extends FunSpec {
+class TokenizerSpec extends AnyFunSpec {
   val wordTokenizer = regexTokenizer("""[\(\)\{\}\.,!\?;\:]|(?:[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+(?:-[\wßçÇÀàéèÉÈùÙÊêîÎûÛÔôäëïöüÄËÏÖÜ]+){0,3}'?)|[-]""".r)
 
   describe(classOf[Tokenizers].toString) {

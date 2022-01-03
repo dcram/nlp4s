@@ -3,11 +3,11 @@ package fr.dcram.nlp4s.spec
 import com.typesafe.scalalogging.LazyLogging
 import fr.dcram.nlp4s.ner.NerTypes.TokenParser
 import fr.dcram.nlp4s.ner.{Token, TokenParsers, TokenParsersRef, regexTokenizer}
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
 import scala.language.implicitConversions
 
-class TokenParsersSpec extends FunSpec with LazyLogging {
+class TokenParsersSpec extends AnyFunSpec with LazyLogging {
   val tokenizer = regexTokenizer("""[(){}.,!?;:]|(?:['\w]+(?:-\w+)?)|[-]""".r)
 
   import TokenParsersRef._

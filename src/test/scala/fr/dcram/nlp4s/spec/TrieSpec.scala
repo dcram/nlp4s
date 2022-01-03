@@ -1,9 +1,9 @@
 package fr.dcram.nlp4s.spec
 
 import fr.dcram.nlp4s.util.Trie
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class TrieSpec extends FunSpec {
+class TrieSpec extends AnyFunSpec {
   describe(Trie.toString) {
     describe("#get") {
       val t = Trie.fromEntries[String, Int](Seq(

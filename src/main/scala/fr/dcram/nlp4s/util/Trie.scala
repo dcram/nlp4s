@@ -30,7 +30,7 @@ object Trie {
       children = nonEmpties
         .map{case (k,v) => (k.head, k.tail, v)}
         .groupBy(_._1)
-        .mapValues(list => fromEntries(list.map{case (_, seq, value) => (seq, value)}))
+        .map{case (k, list) => (k, fromEntries(list.map{case (_, seq, value) => (seq, value)}))}
     )
   }
 }

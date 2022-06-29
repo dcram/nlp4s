@@ -23,13 +23,13 @@ object ExtractDeSuffixesApp extends App with LazyLogging {
   val pw = new PrintWriter(s"$file.street-types.txt")
   val Digit = """^\d+""".r
   private val moreThan2Words = addresses
-    .toStream
+    .to(LazyList)
     .map(_.street.split("\\s+")
     .filterNot(s => Digit.findFirstMatchIn(s).isDefined).toList)
     .filter(_.length > 1)
   val suffixes = moreThan2Words
     .map(_.last)
-    .groupBy(identity).mapValues(_.size)
+    .groupMapReduce(identity)(_ => 1)(_ + _)
     .toSeq
     .sortBy(-_._2)
     .filter(_._1.length > 2)

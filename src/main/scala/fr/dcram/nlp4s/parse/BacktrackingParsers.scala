@@ -6,12 +6,14 @@ import scala.annotation.tailrec
 
 trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok, x]})#f] {
   self =>
+  import scala.language.implicitConversions
+  import scala.collection.compat._
 
-  override def succeed[A](a: A): Parser[Tok, A] = seq => Stream(Result(seq, MatchData(a, List.empty)))
+  override def succeed[A](a: A): Parser[Tok, A] = seq => LazyList(Result(seq, MatchData(a, List.empty)))
 
   override def flatMap[A, B](p: Parser[Tok, A])(f: A => Parser[Tok, B]): Parser[Tok, B] = seq => {
     p(seq)
-      .foldLeft(Stream.empty[Result[Tok, B]]) {
+      .foldLeft(LazyList.empty[Result[Tok, B]]) {
         case (acc, Result(tail, MatchData(a, tokens))) =>
           acc #::: f(a)(tail).map(r => r.copy(m = r.m.copy(tokens = tokens ++ r.m.tokens)))
       }
@@ -24,7 +26,7 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
   override def or[A, B >: A](p1: Parser[Tok, A], p2: => Parser[Tok, B]): Parser[Tok, B] = seq => p1(seq) #::: p2(seq)
 
   override def map2[A, B](p1: Parser[Tok, A], p2: => Parser[Tok, B]): Parser[Tok, (A, B)] = seq =>
-    p1(seq).foldLeft(Stream.empty[Result[Tok, (A, B)]]) {
+    p1(seq).foldLeft(LazyList.empty[Result[Tok, (A, B)]]) {
       case (acc, Result(tail, MatchData(a, tokens))) =>
         acc #::: p2
           .map(b => (a, b))(tail)
@@ -37,10 +39,10 @@ trait BacktrackingParsers[Tok] extends ParsersAlgebra[({type f[+x] = Parser[Tok,
   def fromOpt[A](f: Tok => Option[A]): Parser[Tok, A] = seq => seq match {
     case tok +: tail =>
       f(tok) match {
-        case Some(a) => Stream(Result(tail, MatchData(a, List(tok))))
-        case None => Stream.empty
+        case Some(a) => LazyList(Result(tail, MatchData(a, List(tok))))
+        case None => LazyList.empty
       }
-    case _ => Stream.empty
+    case _ => LazyList.empty
   }
 
   def filter[A](p: Parser[Tok, A])(f: A => Boolean): Parser[Tok, A] = seq => p(seq).filter(r => f(r.m.data))

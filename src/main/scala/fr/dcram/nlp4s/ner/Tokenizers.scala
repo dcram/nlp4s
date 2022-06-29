@@ -6,7 +6,9 @@ import fr.dcram.nlp4s.util.Monoid
 trait Tokenizers extends Monoid[StringTokenizer] {
   self =>
 
-  override def zero:StringTokenizer = str => Stream(Token(0, str.length, str))
+  import scala.language.implicitConversions
+
+  override def zero:StringTokenizer = str => LazyList(Token(0, str.length, str))
   override def op(t1: StringTokenizer, t2:StringTokenizer):StringTokenizer = str => t1(str).flatMap(tok => t2(tok.obj).map{
       case Token(begin2, end2, str) => Token(tok.begin + begin2, tok.begin + end2, str)
     })

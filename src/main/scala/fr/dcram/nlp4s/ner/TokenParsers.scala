@@ -15,6 +15,8 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
             {
   ref =>
 
+  import scala.language.implicitConversions
+
   def digit:TokenParser[String] = reg("""^\d+$""".r).map(_.group(0))
   def digit(n:Int):TokenParser[String] = reg(s"^\\d{$n}$$".r).map(_.group(0))
   def fromOptTok[B](f:String => Option[B]):TokenParser[B] = fromOpt(t => f(t.obj).map(b => t.copy(obj = b)))
@@ -43,15 +45,15 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
         s => s match {
           case tok +: tail => trie.getChild(tok.obj) match {
             case Some(child) => doInTrie(child, tok :: tokens)(tail)
-            case None => Stream.empty
+            case None => LazyList.empty
           }
-          case _ => Stream.empty
+          case _ => LazyList.empty
         },
         s => trie.value match {
           case Some(v) =>
             val tok = MergeApplicative.sequence(tokens.reverse).map(tokens => (v,tokens))
-            Stream(Result(s, MatchData(tok.copy(obj = v), tokens.reverse)))
-          case None => Stream.empty
+            LazyList(Result(s, MatchData(tok.copy(obj = v), tokens.reverse)))
+          case None => LazyList.empty
         }
       )
 
@@ -77,15 +79,15 @@ trait TokenParsers extends BacktrackingParsers[Token[String]]
       (a, str)
   }
 
-  def join[_](p:TokenParser[_])(sep:String = " "):TokenParser[String] = zipJoin(p)(sep).map(_._2)
+  def join[X](p:TokenParser[X])(sep:String = " "):TokenParser[String] = zipJoin(p)(sep).map(_._2)
 
-  def tokens[_](p:TokenParser[_]):TokenParser[List[Token[String]]] = zipTokens(p).map(_._2)
+  def tokens[X](p:TokenParser[X]):TokenParser[List[Token[String]]] = zipTokens(p).map(_._2)
 
   def zipTokens[A](p:TokenParser[A]):TokenParser[(A,List[Token[String]])] = seq => {
     p(seq).map { case Result(tail, MatchData(a, tokens)) =>
       Result(tail, MatchData(a.map(_ => (a.obj, tokens)), tokens)) }
   }
-  def list[_](p:TokenParser[_]):TokenParser[List[String]] = tokens(p).map(toks => toks.map(_.obj))
+  def list[X](p:TokenParser[X]):TokenParser[List[String]] = tokens(p).map(toks => toks.map(_.obj))
 
   implicit def asSetResource(set:Set[String]):NerResource[String] = SetResource(set, identity)
   implicit def asMapResource[V](map:Map[String,V]):NerResource[(String, V)] = MapResource(map, identity)

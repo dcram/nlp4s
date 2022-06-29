@@ -12,6 +12,6 @@ package object ner
   object TokenizerRef extends Tokenizers
   object TokenParsersRef extends TokenParsers
 
-  def regexTokenizer(regex:Regex):StringTokenizer = string => regex.findAllMatchIn(string).map(m => Token(m.start, m.end, m.group(0))).toStream
+  def regexTokenizer(regex:Regex):StringTokenizer = string => regex.findAllMatchIn(string).map(m => Token(m.start, m.end, m.group(0))).to(LazyList)
 
 }

@@ -2,6 +2,7 @@ package fr.dcram.nlp4s.parse
 
 trait ParsersAlgebra[P[+_]] {
   self =>
+  import scala.language.implicitConversions
 
   implicit def ops[A](p:P[A]):Ops[A] = Ops(p)
 

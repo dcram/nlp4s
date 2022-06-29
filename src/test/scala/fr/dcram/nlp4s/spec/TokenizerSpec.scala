@@ -17,13 +17,13 @@ class TokenizerSpec extends AnyFunSpec {
       val chainedTokenizer = sentenceTokenizer.chain(wordTokenizer)
 
       it(s"""should tokenizer sentences in "$sentence"""") {
-        assert(sentenceTokenizer(sentence) == Stream(Token(0,13,sent1),Token(13,28,s" $sent2")))
+        assert(sentenceTokenizer(sentence) == LazyList(Token(0,13,sent1),Token(13,28,s" $sent2")))
       }
       it(s"""should tokenizer words "${sentence}"""") {
-        assert(wordTokenizer(sent2) == Stream(Token(0,7,"Comment"), Token(8,10,"ça"), Token(11,13,"va"), Token(13,14,".")))
+        assert(wordTokenizer(sent2) == LazyList(Token(0,7,"Comment"), Token(8,10,"ça"), Token(11,13,"va"), Token(13,14,".")))
       }
       it(s"""should tokenizer words in chain in sentence \"${sentence}\"""") {
-        assert(chainedTokenizer(sentence) == Stream(
+        assert(chainedTokenizer(sentence) == LazyList(
           Token(0,7,"Bonjour"),
           Token(8,12,"Toto"),
           Token(12,13,"."),

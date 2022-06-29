@@ -24,7 +24,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
   val zipCode:TokenParser[String] = digit(5) or (digit(2) ~ digit(3)).map{case (s1,s2) => s"$s1$s2" }
 
   val addressParser:TokenParser[Address] = {
-    val streetType:TokenParser[String] = (in(streetTypes).lower_ ~ ".".opt).map(_._1)
+    val streetType:TokenParser[String] = (in(streetTypes).lower_() ~ ".".opt).map(_._1)
     val city:TokenParser[String] = ###(_.charAt(0).isUpper)
     val sep:TokenParser[String] = in(",", "-")
     val streetName:TokenParser[String] = """^[\w-']+$""".r.map(_.group(0))
@@ -49,9 +49,9 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
         val sentence = tokenizer("a b A b A B c")
         Seq(
           (in("a"), Seq(("a", 0, 1))),
-          (in("a").lower_, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
+          (in("a").lower_(), Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
           (in("A"), Seq(("A", 4, 5), ("A", 8, 9))),
-          (in("A").lower_, Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
+          (in("A").lower_(), Seq(("a", 0, 1), ("A", 4, 5), ("A", 8, 9))),
         ).zipWithIndex.foreach {
           case ((parser, tokens), i) =>
             it(s"$i. should extract tokens ${tokens}") {
@@ -109,6 +109,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
       }
 
       val s = System.currentTimeMillis()
+      import scala.language.reflectiveCalls
       n.times(f())
       val e = System.currentTimeMillis()
       e-s
@@ -124,7 +125,7 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
         println(f"$n%8d times -> $duration%d ms")
       }
     }
-    val timeoutMillis=100l
+    val timeoutMillis=100L
     it(s"bm2 (with timeout=${timeoutMillis}ms)") {
 
       for(n <- Seq(1,10,100,1000,10000,100000,1000000)) {
@@ -158,6 +159,8 @@ class TokenParsersSpec extends AnyFunSpec with LazyLogging {
 
       logger.info(s"tokenizing the sentence ${sent} * $n")
       val tokens = tokenizer(sent10000)
+
+      logger.info(s"Num tokens: ${tokens.size}")
 
       logger.info(s"scanning addresses")
       val addresses:List[Token[Address]] = addressParser.scan(tokens).matchList.map(_.data).toList

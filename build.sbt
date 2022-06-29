@@ -1,19 +1,19 @@
 import Dependencies._
-lazy val scala212 = "2.12.15"
-lazy val scala211 = "2.11.12"
-ThisBuild / scalaVersion     := scala212
-ThisBuild / version          := "0.4.0"
+lazy val scala213 = "2.13.8"
+//lazy val scala212 = "2.12.16"
+ThisBuild / scalaVersion     := scala213
+ThisBuild / version          := "0.5.0"
 ThisBuild / organization     := "fr.dcram"
 ThisBuild / organizationName := "dcram"
-lazy val supportedScalaVersions = List(scala212, scala211)
+lazy val supportedScalaVersions = List(scala213)
 ThisBuild / crossScalaVersions := supportedScalaVersions
 
 lazy val root = (project in file("."))
   .settings(
     name := "nlp4s",
-    libraryDependencies +=  "org.slf4j" % "slf4j-api" % "1.7.32",
-
-    publishTo := {
+    libraryDependencies += slf4j,
+    libraryDependencies += collectionCompat,
+      publishTo := {
       val nexus = "https://nexus.secure.sparklane/"
       if (isSnapshot.value)
           Some("snapshots" at nexus + "repository/snapshots/")
